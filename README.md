@@ -26,35 +26,40 @@ Set `ANTHROPIC_API_KEY` (or your LLM provider) and optionally override Temporal/
    npm run dev:temporal
    ```
 
-2. **Start the worker**:
+2. **Start the worker** (in another terminal):
 
    ```bash
-   npm run dev:worker
+   npm run worker:multi-agent
    ```
 
 3. **Trigger a workflow** (in another terminal):
 
    ```bash
-   npm run workflow
+   npm run start:multi-agent
    ```
 
 ## Scripts
 
-| Script                    | Description                    |
-| ------------------------- | ------------------------------ |
-| `dev:temporal`            | Start Temporal dev server      |
-| `dev:worker`              | Run the example worker (watch) |
-| `workflow`                | Start the example workflow     |
-| `typecheck`               | Run TypeScript check           |
-| `lint` / `lint:fix`       | ESLint                         |
-| `format` / `format:check` | Prettier                       |
+| Script                    | Description                        |
+| ------------------------- | ---------------------------------- |
+| `dev:temporal`            | Start Temporal dev server          |
+| `worker:multi-agent`      | Run the multi-agent worker (watch) |
+| `start:multi-agent`       | Start the multi-agent workflow     |
+| `typecheck`               | Run TypeScript check               |
+| `lint` / `lint:fix`       | ESLint                             |
+| `format` / `format:check` | Prettier                           |
 
-## Project layout
+## Examples
 
-- `src/example/` – example workflows, activities, tools, and worker
-  - **Workflows**: main agent (`workflow.ts`), Nietzsche and Ayn Rand subagent workflows
-  - **Activities**: LLM and tool handlers
-  - **Worker**: registers workflows and activities with the Zeitlich plugin
+### Multi-Agent (`src/examples/multi-agent/`)
+
+A multi-agent debate system with a main orchestrator and two sub-agent philosophers (Nietzsche and Ayn Rand).
+
+- **`main-agent.workflow.ts`** – orchestrates the conversation, delegates to sub-agents
+- **`nietzsche.workflow.ts`** / **`ayn-rand.workflow.ts`** – sub-agent workflows with distinct personalities
+- **`*.activities.ts`** – LLM calls and tool handlers
+- **`worker.ts`** – registers workflows/activities with the Zeitlich plugin
+- **`start.ts`** – client script to trigger the workflow
 
 The app uses the published **zeitlich** package; workflow code imports from `zeitlich/workflow`, activities and worker from `zeitlich`.
 
