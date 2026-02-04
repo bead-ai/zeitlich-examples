@@ -12,40 +12,73 @@ export const exampleFileTree: FileNode[] = [
         path: "workfiles/invoices",
         type: "directory",
         children: [
-          { path: "workfiles/invoices/INV-2025-001.txt", type: "file" },
-          { path: "workfiles/invoices/INV-2025-002.txt", type: "file" },
-          { path: "workfiles/invoices/INV-2025-003.txt", type: "file" },
+          {
+            path: "workfiles/invoices/INV-2025-001.txt",
+            type: "file",
+            children: [],
+          },
+          {
+            path: "workfiles/invoices/INV-2025-002.txt",
+            type: "file",
+            children: [],
+          },
+          {
+            path: "workfiles/invoices/INV-2025-003.txt",
+            type: "file",
+            children: [],
+          },
         ],
+      },
+      {
+        path: "workfiles/invoices/INV-2025-002.txt",
+        type: "file",
+        children: [],
       },
       {
         path: "workfiles/clients",
         type: "directory",
         children: [
-          { path: "workfiles/clients/acme-corp.txt", type: "file" },
-          { path: "workfiles/clients/globex-inc.txt", type: "file" },
-          { path: "workfiles/clients/initech.txt", type: "file" },
+          {
+            path: "workfiles/clients/acme-corp.txt",
+            type: "file",
+            children: [],
+          },
+          {
+            path: "workfiles/clients/globex-inc.txt",
+            type: "file",
+            children: [],
+          },
+          { path: "workfiles/clients/initech.txt", type: "file", children: [] },
         ],
       },
       {
         path: "workfiles/reports",
         type: "directory",
         children: [
-          { path: "workfiles/reports/q4-2024-summary.txt", type: "file" },
-          { path: "workfiles/reports/tax-prep-2024.txt", type: "file" },
+          {
+            path: "workfiles/reports/q4-2024-summary.txt",
+            type: "file",
+            children: [],
+          },
+          {
+            path: "workfiles/reports/tax-prep-2024.txt",
+            type: "file",
+            children: [],
+          },
         ],
       },
-      { path: "workfiles/notes.txt", type: "file" },
+      { path: "workfiles/notes.txt", type: "file", children: [] },
     ],
   },
   {
     path: "memory",
     type: "directory",
     children: [
-      { path: "memory/2025-02-03.md", type: "file" },
-      { path: "memory/2025-02-04.md", type: "file" },
-      { path: "memory/2025-02-05.md", type: "file" },
-      { path: "memory/2025-02-06.md", type: "file" },
-      { path: "memory/2025-02-07.md", type: "file" },
+      { path: "memory/2025-02-03.md", type: "file", children: [] },
+      { path: "memory/2025-02-04.md", type: "file", children: [] },
+      { path: "memory/2025-02-05.md", type: "file", children: [] },
+      { path: "memory/2025-02-06.md", type: "file", children: [] },
+      { path: "memory/2025-02-07.md", type: "file", children: [] },
     ],
   },
 ];

@@ -5,9 +5,9 @@ import {
   handleAskUserQuestionToolResult,
   invokeModel,
   InMemoryFileSystemProvider,
-  createGlobHandler,
-  createGrepHandler,
-  createReadHandler,
+  globHandler,
+  grepHandler,
+  readHandler,
 } from "zeitlich";
 import type {
   AskUserQuestionToolSchemaType,
@@ -19,11 +19,12 @@ import type {
   FileContent,
   FileNode,
   GrepMatch,
+  GenerateFileTreeActivity,
 } from "zeitlich";
 import { mainAgentWorkflowTools } from "./main-agent.tools";
 import { exampleFileTree, exampleFileContents } from "./data";
-
 export interface MainAgentActivities {
+  generateFileTree: GenerateFileTreeActivity;
   /** Workflow-specific runAgent with tools pre-bound */
   runAgent: RunAgentActivity;
   handleAskUserQuestionToolResult: ActivityToolHandler<
@@ -32,15 +33,24 @@ export interface MainAgentActivities {
   >;
   handleGlobToolResult: ActivityToolHandler<
     GlobToolSchemaType,
-    { files: FileNode[] }
+    { files: FileNode[] },
+    {
+      scopedNodes: FileNode[];
+    }
   >;
   handleGrepToolResult: ActivityToolHandler<
     GrepToolSchemaType,
-    { matches: GrepMatch[] }
+    { matches: GrepMatch[] },
+    {
+      scopedNodes: FileNode[];
+    }
   >;
   handleReadToolResult: ActivityToolHandler<
     ReadToolSchemaType,
-    { path: string; content: FileContent }
+    { path: string; content: FileContent },
+    {
+      scopedNodes: FileNode[];
+    }
   >;
 }
 
@@ -76,20 +86,15 @@ export const createMainAgentActivities = (
   );
 
   return {
+    generateFileTree: async () => exampleFileTree,
     runAgent: (config, invocationConfig) =>
       invokeModel(redis, { ...config, tools }, model, invocationConfig),
     handleAskUserQuestionToolResult,
-    handleGlobToolResult: createGlobHandler({
-      provider: fileSystemProvider,
-      scopedNodes: exampleFileTree,
-    }),
-    handleGrepToolResult: createGrepHandler({
-      provider: fileSystemProvider,
-      scopedNodes: exampleFileTree,
-    }),
-    handleReadToolResult: createReadHandler({
-      provider: fileSystemProvider,
-      scopedNodes: exampleFileTree,
-    }),
+    handleGlobToolResult: (args, context) =>
+      globHandler(args, context.scopedNodes, fileSystemProvider),
+    handleGrepToolResult: (args, context) =>
+      grepHandler(args, context.scopedNodes, fileSystemProvider),
+    handleReadToolResult: (args, context) =>
+      readHandler(args, context.scopedNodes, fileSystemProvider),
   };
 };

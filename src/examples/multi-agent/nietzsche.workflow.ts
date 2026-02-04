@@ -74,6 +74,6 @@ Remember: "He who fights with monsters should be careful lest he thereby become 
     }
   );
 
-  const message = await session.runSession(prompt, stateManager);
+  const message = await session.runSession({ stateManager });
   return message ? await extractTextContent(message) : null;
 }

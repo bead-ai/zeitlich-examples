@@ -10,17 +10,17 @@ import {
   withSubagentSupport,
   buildFileTreePrompt,
   type ZeitlichSharedActivities,
+  type FileNode,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
 import { mainAgentBaseTools, subagentConfigs } from "./main-agent.tools";
-import { exampleFileTree } from "./data";
 
 /**
  * Custom state keys for this workflow (extends BaseAgentState automatically)
  */
 export interface MainAgentCustomState {
-  prompt: string;
   chatMessages: StoredMessage[];
+  fileTree: FileNode[];
 }
 
 /**
@@ -38,6 +38,7 @@ const {
   handleGlobToolResult,
   handleGrepToolResult,
   handleReadToolResult,
+  generateFileTree,
 } = proxyActivities<MainAgentActivities>({
   startToCloseTimeout: "30m",
   retry: {
@@ -64,9 +65,10 @@ export async function multiAgentWorkflow({
   prompt,
 }: MultiAgentWorkflowConfig): Promise<MainAgentState> {
   const { runId: temporalRunId } = workflowInfo();
+  const fileTree = await generateFileTree();
 
   const stateManager = createAgentStateManager<MainAgentCustomState>({
-    initialState: { prompt, chatMessages: [] },
+    initialState: { chatMessages: [], fileTree },
   });
 
   // withSubagentSupport must be called inside workflow (createTaskHandler needs workflow context)
@@ -86,9 +88,14 @@ export async function multiAgentWorkflow({
         onPostToolUse: ({ toolCall, result }) => {
           if (
             toolCall.name === "AskUserQuestion" &&
+            typeof result.result === "object" &&
+            result.result !== null &&
             "chatMessages" in result.result
           ) {
-            stateManager.set("chatMessages", result.result.chatMessages);
+            stateManager.set(
+              "chatMessages",
+              (result.result as { chatMessages: StoredMessage[] }).chatMessages
+            );
             stateManager.waitForInput();
           }
         },
@@ -97,14 +104,17 @@ export async function multiAgentWorkflow({
     {
       AskUserQuestion: handleAskUserQuestionToolResult,
       Task: taskHandler,
-      Glob: handleGlobToolResult,
-      Grep: handleGrepToolResult,
-      FileRead: handleReadToolResult,
+      Glob: (args) =>
+        handleGlobToolResult(args, { scopedNodes: stateManager.getFileTree() }),
+      Grep: (args) =>
+        handleGrepToolResult(args, { scopedNodes: stateManager.getFileTree() }),
+      FileRead: (args) =>
+        handleReadToolResult(args, { scopedNodes: stateManager.getFileTree() }),
     }
   );
 
   // Build file tree context for the agent
-  const fileTreeContext = buildFileTreePrompt(exampleFileTree, {
+  const fileTreeContext = buildFileTreePrompt(stateManager.getFileTree(), {
     headerText: "Available Files",
     descriptionText:
       "You have access to the following files. Use the Read, Glob, and Grep tools to explore them.",
@@ -136,7 +146,7 @@ ${fileTreeContext}`,
     }
   );
 
-  await session.runSession(prompt, stateManager);
+  await session.runSession({ stateManager });
 
   return stateManager.getCurrentState();
 }
