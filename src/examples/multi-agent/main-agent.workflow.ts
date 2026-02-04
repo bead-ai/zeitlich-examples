@@ -11,6 +11,9 @@ import {
   buildFileTreePrompt,
   type ZeitlichSharedActivities,
   type FileNode,
+  type GlobToolSchemaType,
+  type GrepToolSchemaType,
+  type ReadToolSchemaType,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
 import { mainAgentBaseTools, subagentConfigs } from "./main-agent.tools";
@@ -79,6 +82,19 @@ export async function multiAgentWorkflow({
 
   const toolRegistry = createToolRegistry(workflowTools);
 
+  const handlers = {
+    AskUserQuestion: handleAskUserQuestionToolResult,
+    Task: taskHandler,
+    Glob: (args: GlobToolSchemaType): ReturnType<typeof handleGlobToolResult> =>
+      handleGlobToolResult(args, { scopedNodes: stateManager.getFileTree() }),
+    Grep: (args: GrepToolSchemaType): ReturnType<typeof handleGrepToolResult> =>
+      handleGrepToolResult(args, { scopedNodes: stateManager.getFileTree() }),
+    FileRead: (
+      args: ReadToolSchemaType
+    ): ReturnType<typeof handleReadToolResult> =>
+      handleReadToolResult(args, { scopedNodes: stateManager.getFileTree() }),
+  };
+
   const toolRouter = createToolRouter(
     {
       registry: toolRegistry,
@@ -88,29 +104,16 @@ export async function multiAgentWorkflow({
         onPostToolUse: ({ toolCall, result }) => {
           if (
             toolCall.name === "AskUserQuestion" &&
-            typeof result.result === "object" &&
             result.result !== null &&
             "chatMessages" in result.result
           ) {
-            stateManager.set(
-              "chatMessages",
-              (result.result as { chatMessages: StoredMessage[] }).chatMessages
-            );
+            stateManager.set("chatMessages", result.result.chatMessages);
             stateManager.waitForInput();
           }
         },
       },
     },
-    {
-      AskUserQuestion: handleAskUserQuestionToolResult,
-      Task: taskHandler,
-      Glob: (args) =>
-        handleGlobToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-      Grep: (args) =>
-        handleGrepToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-      FileRead: (args) =>
-        handleReadToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-    }
+    handlers
   );
 
   // Build file tree context for the agent
