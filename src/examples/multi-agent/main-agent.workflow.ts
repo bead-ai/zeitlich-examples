@@ -7,7 +7,6 @@ import {
   createPromptManager,
   createToolRegistry,
   createToolRouter,
-  withSubagentSupport,
   buildFileTreePrompt,
   type ZeitlichSharedActivities,
   type FileNode,
@@ -71,20 +70,14 @@ export async function multiAgentWorkflow({
   const fileTree = await generateFileTree();
 
   const stateManager = createAgentStateManager<MainAgentCustomState>({
-    initialState: { chatMessages: [], fileTree },
+    chatMessages: [],
+    fileTree,
   });
 
-  // withSubagentSupport must be called inside workflow (createTaskHandler needs workflow context)
-  const { tools: workflowTools, taskHandler } = withSubagentSupport(
-    mainAgentBaseTools,
-    { subagents: subagentConfigs }
-  );
-
-  const toolRegistry = createToolRegistry(workflowTools);
+  const toolRegistry = createToolRegistry(mainAgentBaseTools);
 
   const handlers = {
     AskUserQuestion: handleAskUserQuestionToolResult,
-    Task: taskHandler,
     Glob: (args: GlobToolSchemaType): ReturnType<typeof handleGlobToolResult> =>
       handleGlobToolResult(args, { scopedNodes: stateManager.getFileTree() }),
     Grep: (args: GrepToolSchemaType): ReturnType<typeof handleGrepToolResult> =>
@@ -146,6 +139,7 @@ ${fileTreeContext}`,
       promptManager,
       toolRouter,
       toolRegistry,
+      subagents: subagentConfigs,
     }
   );
 
