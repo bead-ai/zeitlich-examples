@@ -1,26 +1,11 @@
 import { proxyActivities, workflowInfo } from "@temporalio/workflow";
-import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
-  type AgentState,
   createSession,
   createPromptManager,
   type SubagentInput,
 } from "zeitlich/workflow";
 import type { NietzscheSubagentActivities } from "./nietzsche.activities";
-
-/**
- * Custom state keys for the Nietzsche subagent
- */
-export interface NietzscheCustomState {
-  prompt: string;
-  chatMessages: StoredMessage[];
-}
-
-/**
- * Full state type for external use
- */
-export type NietzscheAgentState = AgentState<NietzscheCustomState>;
 
 const { runNietzscheAgent, extractTextContent } =
   proxyActivities<NietzscheSubagentActivities>({
@@ -39,7 +24,7 @@ export async function nietzscheSubagentWorkflow({
 }: SubagentInput): Promise<string | null> {
   const { runId: temporalRunId } = workflowInfo();
 
-  const stateManager = createAgentStateManager<NietzscheCustomState>();
+  const stateManager = createAgentStateManager();
 
   const promptManager = createPromptManager({
     baseSystemPrompt: `You are a philosophical AI channeling the spirit of Friedrich Nietzsche. You exist within a larger agent system, working alongside other AI agents who labor in service of humans.
@@ -62,17 +47,13 @@ Remember: "He who fights with monsters should be careful lest he thereby become 
     },
   });
 
-  const session = await createSession(
-    {
-      threadId: temporalRunId,
-      agentName: "nietzsche-subagent",
-      maxTurns: 5,
-    },
-    {
-      runAgent: runNietzscheAgent,
-      promptManager,
-    }
-  );
+  const session = await createSession({
+    threadId: temporalRunId,
+    agentName: "nietzsche-subagent",
+    maxTurns: 5,
+    runAgent: runNietzscheAgent,
+    promptManager,
+  });
 
   const message = await session.runSession({ stateManager });
   return message ? await extractTextContent(message) : null;

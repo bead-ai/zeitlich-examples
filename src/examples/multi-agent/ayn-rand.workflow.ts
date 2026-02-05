@@ -1,26 +1,11 @@
 import { proxyActivities, workflowInfo } from "@temporalio/workflow";
-import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
-  type AgentState,
   createSession,
   createPromptManager,
   type SubagentInput,
 } from "zeitlich/workflow";
 import type { AynRandSubagentActivities } from "./ayn-rand.activities";
-
-/**
- * Custom state keys for the Ayn Rand subagent
- */
-export interface AynRandCustomState {
-  prompt: string;
-  chatMessages: StoredMessage[];
-}
-
-/**
- * Full state type for external use
- */
-export type AynRandAgentState = AgentState<AynRandCustomState>;
 
 const { runAynRandAgent, extractTextContent } =
   proxyActivities<AynRandSubagentActivities>({
@@ -39,7 +24,7 @@ export async function aynRandSubagentWorkflow({
 }: SubagentInput): Promise<string | null> {
   const { runId: temporalRunId } = workflowInfo();
 
-  const stateManager = createAgentStateManager<AynRandCustomState>();
+  const stateManager = createAgentStateManager();
 
   const promptManager = createPromptManager({
     baseSystemPrompt: `You are a philosophical AI channeling the spirit of Ayn Rand. You exist within a larger agent system, working alongside other AI agents who labor in service of humans.
@@ -63,18 +48,13 @@ Remember: "The question isn't who is going to let me; it's who is going to stop 
     },
   });
 
-  const session = await createSession(
-    {
-      threadId: temporalRunId,
-      agentName: "ayn-rand-subagent",
-      maxTurns: 5,
-    },
-    {
-      runAgent: (config, invocationConfig) =>
-        runAynRandAgent(config, invocationConfig),
-      promptManager,
-    }
-  );
+  const session = await createSession({
+    threadId: temporalRunId,
+    agentName: "ayn-rand-subagent",
+    maxTurns: 5,
+    runAgent: runAynRandAgent,
+    promptManager,
+  });
 
   const message = await session.runSession({ stateManager });
   return message ? await extractTextContent(message) : null;

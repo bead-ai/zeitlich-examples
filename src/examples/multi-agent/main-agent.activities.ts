@@ -1,56 +1,13 @@
 import type Redis from "ioredis";
-import type { StoredMessage } from "@langchain/core/messages";
 import { ChatAnthropic } from "@langchain/anthropic";
-import {
-  handleAskUserQuestionToolResult,
-  invokeModel,
-  InMemoryFileSystemProvider,
-  globHandler,
-  grepHandler,
-  readHandler,
-} from "zeitlich";
-import type {
-  AskUserQuestionToolSchemaType,
-  GrepToolSchemaType,
-  GlobToolSchemaType,
-  ReadToolSchemaType,
-  RunAgentActivity,
-  ActivityToolHandler,
-  FileContent,
-  FileNode,
-  GrepMatch,
-  GenerateFileTreeActivity,
-} from "zeitlich";
-import { exampleFileTree, exampleFileContents } from "./data";
+import { handleAskUserQuestionToolResult, invokeModel } from "zeitlich";
+import { type RunAgentActivity, toTree } from "zeitlich";
+import { inMemoryFileSystem } from "./data";
 export interface MainAgentActivities {
-  generateFileTree: GenerateFileTreeActivity;
+  generateFileTree: () => Promise<string>;
   /** Workflow-specific runAgent with tools pre-bound */
   runAgent: RunAgentActivity;
-  handleAskUserQuestionToolResult: ActivityToolHandler<
-    AskUserQuestionToolSchemaType,
-    { chatMessages: StoredMessage[] }
-  >;
-  handleGlobToolResult: ActivityToolHandler<
-    GlobToolSchemaType,
-    { files: FileNode[] },
-    {
-      scopedNodes: FileNode[];
-    }
-  >;
-  handleGrepToolResult: ActivityToolHandler<
-    GrepToolSchemaType,
-    { matches: GrepMatch[] },
-    {
-      scopedNodes: FileNode[];
-    }
-  >;
-  handleReadToolResult: ActivityToolHandler<
-    ReadToolSchemaType,
-    { path: string; content: FileContent },
-    {
-      scopedNodes: FileNode[];
-    }
-  >;
+  handleAskUserQuestionToolResult: typeof handleAskUserQuestionToolResult;
 }
 
 /**
@@ -71,27 +28,10 @@ export const createMainAgentActivities = (
     betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
   });
 
-  // Create filesystem provider with example data
-  const fileSystemProvider = InMemoryFileSystemProvider.fromTextFiles(
-    exampleFileTree,
-    Object.fromEntries(
-      Object.entries(exampleFileContents).map(([path, content]) => [
-        path,
-        content.type === "text" ? content.content : "",
-      ])
-    )
-  );
-
   return {
-    generateFileTree: async () => exampleFileTree,
+    generateFileTree: async () => Promise.resolve(toTree(inMemoryFileSystem)),
     runAgent: (config, invocationConfig) =>
       invokeModel(redis, config, model, invocationConfig),
     handleAskUserQuestionToolResult,
-    handleGlobToolResult: (args, context) =>
-      globHandler(args, context.scopedNodes, fileSystemProvider),
-    handleGrepToolResult: (args, context) =>
-      grepHandler(args, context.scopedNodes, fileSystemProvider),
-    handleReadToolResult: (args, context) =>
-      readHandler(args, context.scopedNodes, fileSystemProvider),
   };
 };
