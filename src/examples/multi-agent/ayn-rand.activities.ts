@@ -7,6 +7,7 @@ import {
 } from "@langchain/core/messages";
 import { invokeModel } from "zeitlich";
 import type { RunAgentActivity } from "zeitlich";
+import type { WorkflowClient } from "@temporalio/client";
 
 export interface AynRandSubagentActivities {
   /** Ayn Rand-specific runAgent with no tools */
@@ -40,9 +41,13 @@ function extractTextContent(storedMessage: StoredMessage): string | null {
  * Creates activities for the Ayn Rand subagent workflow.
  * No tools are bound - this agent only reflects and responds.
  */
-export const createAynRandSubagentActivities = (
-  redis: Redis
-): AynRandSubagentActivities => {
+export const createAynRandSubagentActivities = ({
+  redis,
+  client,
+}: {
+  redis: Redis;
+  client: WorkflowClient;
+}): AynRandSubagentActivities => {
   const model = new ChatAnthropic({
     model: "claude-sonnet-4-5",
     maxRetries: 2,
@@ -55,8 +60,7 @@ export const createAynRandSubagentActivities = (
   });
 
   return {
-    runAynRandAgent: (config, invocationConfig) =>
-      invokeModel(redis, config, model, invocationConfig),
+    runAynRandAgent: (config) => invokeModel({ config, model, redis, client }),
     extractTextContent: async (storedMessage) =>
       extractTextContent(storedMessage),
   };

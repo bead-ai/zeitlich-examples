@@ -2,23 +2,13 @@ import { proxyActivities, workflowInfo } from "@temporalio/workflow";
 import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
-  type AgentState,
   createSession,
   createPromptManager,
   askUserQuestionTool,
+  type AgentStatus,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
 import { subagentConfigs } from "./main-agent.tools";
-
-/**
- * Custom state keys for this workflow (extends BaseAgentState automatically)
- */
-export interface MainAgentCustomState {
-  chatMessages: StoredMessage[];
-}
-export interface MultiAgentWorkflowConfig {
-  prompt: string;
-}
 
 const { runAgent, handleAskUserQuestionToolResult } =
   proxyActivities<MainAgentActivities>({
@@ -34,7 +24,9 @@ const { runAgent, handleAskUserQuestionToolResult } =
 
 export async function multiAgentWorkflow({
   prompt,
-}: MultiAgentWorkflowConfig): Promise<AgentState<MainAgentCustomState>> {
+}: {
+  prompt: string;
+}): Promise<AgentStatus> {
   const { runId: temporalRunId } = workflowInfo();
   const stateManager = createAgentStateManager({
     chatMessages: [] as StoredMessage[],
@@ -78,5 +70,5 @@ David has given you the nickname "Herr Zeitlich" because he assumes you would al
 
   await session.runSession({ stateManager });
 
-  return stateManager.getCurrentState();
+  return stateManager.getStatus();
 }

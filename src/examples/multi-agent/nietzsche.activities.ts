@@ -7,6 +7,7 @@ import {
 } from "@langchain/core/messages";
 import { invokeModel } from "zeitlich";
 import type { RunAgentActivity } from "zeitlich";
+import type { WorkflowClient } from "@temporalio/client";
 
 export interface NietzscheSubagentActivities {
   /** Nietzsche-specific runAgent with no tools */
@@ -40,9 +41,13 @@ function extractTextContent(storedMessage: StoredMessage): string | null {
  * Creates activities for the Nietzsche subagent workflow.
  * No tools are bound - this agent only reflects and responds.
  */
-export const createNietzscheSubagentActivities = (
-  redis: Redis
-): NietzscheSubagentActivities => {
+export const createNietzscheSubagentActivities = ({
+  redis,
+  client,
+}: {
+  redis: Redis;
+  client: WorkflowClient;
+}): NietzscheSubagentActivities => {
   const model = new ChatAnthropic({
     model: "claude-sonnet-4-5",
     maxRetries: 2,
@@ -55,8 +60,8 @@ export const createNietzscheSubagentActivities = (
   });
 
   return {
-    runNietzscheAgent: (config, invocationConfig) =>
-      invokeModel(redis, config, model, invocationConfig),
+    runNietzscheAgent: (config) =>
+      invokeModel({ config, model, redis, client }),
     extractTextContent: async (storedMessage) =>
       extractTextContent(storedMessage),
   };

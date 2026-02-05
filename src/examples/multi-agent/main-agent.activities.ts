@@ -3,6 +3,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { handleAskUserQuestionToolResult, invokeModel } from "zeitlich";
 import { type RunAgentActivity, toTree } from "zeitlich";
 import { inMemoryFileSystem } from "./data";
+import type { WorkflowClient } from "@temporalio/client";
 export interface MainAgentActivities {
   generateFileTree: () => Promise<string>;
   /** Workflow-specific runAgent with tools pre-bound */
@@ -14,9 +15,13 @@ export interface MainAgentActivities {
  * Creates activities for the main agent workflow
  * Tools and model are bound at activity creation time, not passed per-call
  */
-export const createMainAgentActivities = (
-  redis: Redis
-): MainAgentActivities => {
+export const createMainAgentActivities = ({
+  redis,
+  client,
+}: {
+  redis: Redis;
+  client: WorkflowClient;
+}): MainAgentActivities => {
   const model = new ChatAnthropic({
     model: "claude-sonnet-4-5",
     maxRetries: 2,
@@ -30,8 +35,7 @@ export const createMainAgentActivities = (
 
   return {
     generateFileTree: async () => Promise.resolve(toTree(inMemoryFileSystem)),
-    runAgent: (config, invocationConfig) =>
-      invokeModel(redis, config, model, invocationConfig),
+    runAgent: (config) => invokeModel({ config, model, redis, client }),
     handleAskUserQuestionToolResult,
   };
 };

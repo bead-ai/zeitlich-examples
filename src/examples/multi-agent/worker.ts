@@ -1,16 +1,19 @@
 import "dotenv/config";
 
+import { fileURLToPath } from "node:url";
 import { NativeConnection, Worker } from "@temporalio/worker";
 import { createMainAgentActivities } from "./main-agent.activities";
 import { createNietzscheSubagentActivities } from "./nietzsche.activities";
 import { createAynRandSubagentActivities } from "./ayn-rand.activities";
 import { ZeitlichPlugin } from "zeitlich";
 import Redis from "ioredis";
+import { Client } from "@temporalio/client";
 
 async function run(): Promise<void> {
   const connection = await NativeConnection.connect({
     address: "localhost:7233",
   });
+  const client = new Client({ connection });
 
   const redis = new Redis({
     host: "localhost",
@@ -25,11 +28,11 @@ async function run(): Promise<void> {
       namespace: "default",
       taskQueue: "zeitlich",
       // Workflows are registered using a path as they run in a separate JS context.
-      workflowsPath: require.resolve("./workflows"),
+      workflowsPath: fileURLToPath(new URL("./workflows.ts", import.meta.url)),
       activities: {
-        ...createMainAgentActivities(redis),
-        ...createNietzscheSubagentActivities(redis),
-        ...createAynRandSubagentActivities(redis),
+        ...createMainAgentActivities({ redis, client: client.workflow }),
+        ...createNietzscheSubagentActivities({ redis, client: client.workflow }),
+        ...createAynRandSubagentActivities({ redis, client: client.workflow }),
       },
     });
 
