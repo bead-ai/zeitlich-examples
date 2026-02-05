@@ -56,7 +56,7 @@ export const createNietzscheSubagentActivities = (
 
   return {
     runNietzscheAgent: (config, invocationConfig) =>
-      invokeModel(redis, { ...config, tools: [] }, model, invocationConfig),
+      invokeModel(redis, config, model, invocationConfig),
     extractTextContent: async (storedMessage) =>
       extractTextContent(storedMessage),
   };

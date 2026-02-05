@@ -5,17 +5,17 @@ import {
   type AgentState,
   createSession,
   createPromptManager,
-  createToolRegistry,
   createToolRouter,
   buildFileTreePrompt,
   type ZeitlichSharedActivities,
   type FileNode,
-  type GlobToolSchemaType,
-  type GrepToolSchemaType,
-  type ReadToolSchemaType,
+  askUserQuestionTool,
+  globTool,
+  grepTool,
+  readTool,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
-import { mainAgentBaseTools, subagentConfigs } from "./main-agent.tools";
+import { subagentConfigs } from "./main-agent.tools";
 
 /**
  * Custom state keys for this workflow (extends BaseAgentState automatically)
@@ -74,40 +74,49 @@ export async function multiAgentWorkflow({
     fileTree,
   });
 
-  const toolRegistry = createToolRegistry(mainAgentBaseTools);
-
-  const handlers = {
-    AskUserQuestion: handleAskUserQuestionToolResult,
-    Glob: (args: GlobToolSchemaType): ReturnType<typeof handleGlobToolResult> =>
-      handleGlobToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-    Grep: (args: GrepToolSchemaType): ReturnType<typeof handleGrepToolResult> =>
-      handleGrepToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-    FileRead: (
-      args: ReadToolSchemaType
-    ): ReturnType<typeof handleReadToolResult> =>
-      handleReadToolResult(args, { scopedNodes: stateManager.getFileTree() }),
-  };
-
-  const toolRouter = createToolRouter(
-    {
-      registry: toolRegistry,
-      threadId: temporalRunId,
-      appendToolResult,
-      hooks: {
-        onPostToolUse: ({ toolCall, result }) => {
-          if (
-            toolCall.name === "AskUserQuestion" &&
-            result.result !== null &&
-            "chatMessages" in result.result
-          ) {
-            stateManager.set("chatMessages", result.result.chatMessages);
-            stateManager.waitForInput();
-          }
-        },
+  const toolRouter = createToolRouter({
+    threadId: temporalRunId,
+    appendToolResult,
+    tools: {
+      AskUserQuestion: {
+        ...askUserQuestionTool,
+        handler: handleAskUserQuestionToolResult,
+      },
+      Glob: {
+        ...globTool,
+        handler: (args) =>
+          handleGlobToolResult(args, {
+            scopedNodes: stateManager.getFileTree(),
+          }),
+      },
+      Grep: {
+        ...grepTool,
+        handler: (args) =>
+          handleGrepToolResult(args, {
+            scopedNodes: stateManager.getFileTree(),
+          }),
+      },
+      FileRead: {
+        ...readTool,
+        handler: (args) =>
+          handleReadToolResult(args, {
+            scopedNodes: stateManager.getFileTree(),
+          }),
       },
     },
-    handlers
-  );
+    hooks: {
+      onPostToolUse: ({ toolCall, result }) => {
+        if (
+          toolCall.name === "AskUserQuestion" &&
+          result.result !== null &&
+          "chatMessages" in result.result
+        ) {
+          stateManager.set("chatMessages", result.result.chatMessages);
+          stateManager.waitForInput();
+        }
+      },
+    },
+  });
 
   // Build file tree context for the agent
   const fileTreeContext = buildFileTreePrompt(stateManager.getFileTree(), {
@@ -138,7 +147,6 @@ ${fileTreeContext}`,
       runAgent,
       promptManager,
       toolRouter,
-      toolRegistry,
       subagents: subagentConfigs,
     }
   );

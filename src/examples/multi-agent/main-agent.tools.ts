@@ -1,21 +1,4 @@
-import {
-  askUserQuestionTool,
-  readTool,
-  grepTool,
-  globTool,
-  createTaskTool,
-} from "zeitlich/workflow";
 import type { SubagentConfig } from "zeitlich/workflow";
-
-/**
- * Base tools for the main agent workflow (without subagent support)
- */
-export const mainAgentBaseTools = {
-  AskUserQuestion: askUserQuestionTool,
-  Glob: globTool,
-  Grep: grepTool,
-  FileRead: readTool,
-} as const;
 
 /**
  * Subagent configurations for the main agent workflow.
@@ -38,12 +21,3 @@ export const subagentConfigs: SubagentConfig[] = [
     // No resultSchema - returns a string directly
   },
 ];
-
-/**
- * Full tool definitions for activities (tool schemas only, no handlers)
- * This can be loaded at module level since createTaskTool doesn't need workflow context.
- */
-export const mainAgentWorkflowTools = {
-  ...mainAgentBaseTools,
-  Task: createTaskTool(subagentConfigs),
-} as const;

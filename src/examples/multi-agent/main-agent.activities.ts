@@ -21,7 +21,6 @@ import type {
   GrepMatch,
   GenerateFileTreeActivity,
 } from "zeitlich";
-import { mainAgentWorkflowTools } from "./main-agent.tools";
 import { exampleFileTree, exampleFileContents } from "./data";
 export interface MainAgentActivities {
   generateFileTree: GenerateFileTreeActivity;
@@ -61,8 +60,6 @@ export interface MainAgentActivities {
 export const createMainAgentActivities = (
   redis: Redis
 ): MainAgentActivities => {
-  const tools = Object.values(mainAgentWorkflowTools);
-
   const model = new ChatAnthropic({
     model: "claude-sonnet-4-5",
     maxRetries: 2,
@@ -88,7 +85,7 @@ export const createMainAgentActivities = (
   return {
     generateFileTree: async () => exampleFileTree,
     runAgent: (config, invocationConfig) =>
-      invokeModel(redis, { ...config, tools }, model, invocationConfig),
+      invokeModel(redis, config, model, invocationConfig),
     handleAskUserQuestionToolResult,
     handleGlobToolResult: (args, context) =>
       globHandler(args, context.scopedNodes, fileSystemProvider),
