@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
     "dev:temporal": "temporal server start-dev",
+    "worker:fs-agent": "tsx watch src/examples/fs-agent/worker.ts",
+    "start:fs-agent": "tsx src/examples/fs-agent/start.ts",
     "worker:multi-agent": "tsx watch src/examples/multi-agent/worker.ts",
     "start:multi-agent": "tsx src/examples/multi-agent/start.ts"
   },
@@ -27,7 +29,7 @@
     "@temporalio/workflow": "^1.14.1",
     "dotenv": "^17.2.3",
     "ioredis": "^5.9.2",
-    "just-bash": "^2.9.2",
+    "just-bash": "^2.9.5",
     "zeitlich": "github:bead-ai/zeitlich#main"
   },
   "devDependencies": {
