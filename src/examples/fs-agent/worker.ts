@@ -5,7 +5,10 @@ import { Client } from "@temporalio/client";
 import Redis from "ioredis";
 import { fileURLToPath } from "node:url";
 import { ZeitlichPlugin } from "zeitlich";
+
+/* Supported workflows */
 import { createMainAgentActivities } from "./main-agent.activities";
+import { createFsAgentActivities } from "./fs-agent.activities";
 
 async function run() {
     const connection = await NativeConnection.connect({
@@ -29,6 +32,7 @@ async function run() {
             workflowsPath: fileURLToPath(new URL("./workflows.ts", import.meta.url)),
             activities: {
                 ...createMainAgentActivities({redis, client: client.workflow}),
+                ...createFsAgentActivities({redis, client: client.workflow}),
             }
         });
 

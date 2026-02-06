@@ -10,7 +10,6 @@ import type { MainAgentActivities } from "./main-agent.activities";
 const {
   runAgent,
   generateFileTree,
-  handleBashToolResult,
 } = proxyActivities<MainAgentActivities>({
   startToCloseTimeout: "30m",
   retry: {
@@ -44,10 +43,12 @@ export async function mainAgentWorkflow({
     },
     buildFileTree: generateFileTree,
     subagents: [
+        {
+            name: "fs-subagent",
+            description: "A subagent you can leverage to ask any filesystem related questions you'd like. Subagent has full access to the filesystem as the name implies",
+            workflowType: "fsAgentWorkflow",
+        }
     ],
-    buildInTools: {
-      Bash: handleBashToolResult,
-    },
   });
 
   await session.runSession({ stateManager });
