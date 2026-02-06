@@ -1,6 +1,10 @@
 import type Redis from "ioredis";
 import { ChatAnthropic } from "@langchain/anthropic";
-import { handleAskUserQuestionToolResult, invokeModel } from "zeitlich";
+import {
+  handleAskUserQuestionToolResult,
+  handleBashTool,
+  invokeModel,
+} from "zeitlich";
 import { type RunAgentActivity, toTree } from "zeitlich";
 import { inMemoryFileSystem } from "./data";
 import type { WorkflowClient } from "@temporalio/client";
@@ -9,6 +13,7 @@ export interface MainAgentActivities {
   /** Workflow-specific runAgent with tools pre-bound */
   runAgent: RunAgentActivity;
   handleAskUserQuestionToolResult: typeof handleAskUserQuestionToolResult;
+  handleBashToolResult: ReturnType<typeof handleBashTool>;
 }
 
 /**
@@ -34,6 +39,7 @@ export const createMainAgentActivities = ({
   });
 
   return {
+    handleBashToolResult: handleBashTool(inMemoryFileSystem),
     generateFileTree: async () => Promise.resolve(toTree(inMemoryFileSystem)),
     runAgent: (config) => invokeModel({ config, model, redis, client }),
     handleAskUserQuestionToolResult,
