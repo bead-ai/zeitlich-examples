@@ -37,6 +37,6 @@ export function createFsAgentActivities({ redis, client }: CreateFsAgentActiviti
     return {
         fsAgentRunAgent: (config) => invokeModel({ config, model, redis, client }),
         fsAgentGenerateFileTree: async () => Promise.resolve(toTree(fs)),
-        fsAgentHandleBashToolResult: handleBashTool(fs),
+        fsAgentHandleBashToolResult: handleBashTool({fs}),
     };
 }
