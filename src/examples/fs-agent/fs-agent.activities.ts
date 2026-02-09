@@ -2,10 +2,10 @@ import type { RunAgentActivity} from "zeitlich";
 import { handleBashTool, invokeModel, toTree } from "zeitlich";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
-import { ChatAnthropic } from "@langchain/anthropic";
 import { OverlayFs } from "just-bash";
 import { dirname } from "path";
 import { fileURLToPath } from "node:url";
+import { ChatBedrockConverse } from "@langchain/aws";
 
 export interface FsAgentActivities {
     fsAgentRunAgent: RunAgentActivity,
@@ -21,15 +21,16 @@ type CreateFsAgentActivitiesIn = {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function createFsAgentActivities({ redis, client }: CreateFsAgentActivitiesIn): FsAgentActivities {
-    const model = new ChatAnthropic({
-        model: "claude-sonnet-4-5",
-        maxRetries: 2,
-        thinking: {
-          budget_tokens: 1024,
-          type: "enabled",
-        },
+    const model = new ChatBedrockConverse({
+        model: "us.anthropic.claude-opus-4-5-20251101-v1:0",
+        region: process.env.AWS_REGION || "us-west-2",
         maxTokens: 8000,
-        betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
+        additionalModelRequestFields: {
+          thinking: {
+            type: "enabled",
+            budget_tokens: 1024,
+          },
+        },
       });
 
       const fs = new OverlayFs({ root: __dirname, mountPoint: "/home/user" });
