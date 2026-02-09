@@ -1,9 +1,11 @@
 import type { RunAgentActivity } from "zeitlich";
-import { handleBashTool, invokeModel, toTree } from "zeitlich";
+import { invokeModel } from "zeitlich";
+import { handleBashTool } from "./tools/e2bBashTool/handle";
+import { toTree } from "./tools/toTree";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
-import { ChatBedrockConverse } from "@langchain/aws";
 import type { Sandbox } from "e2b";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 const MAX_OUTPUT_CHARS = 16_000;
 
@@ -27,18 +29,17 @@ type CreateFsAgentActivitiesIn = {
 }
 
 export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgentActivitiesIn): FsAgentActivities {
-    const model = new ChatBedrockConverse({
-        model: "us.anthropic.claude-sonnet-4-20250514-v1:0",
-        region: process.env.AWS_REGION || "us-east-1",
-        maxTokens: 8000,
-      });
-      
+  const model = new ChatAnthropic({
+    model: "claude-sonnet-4-5",
+    maxRetries: 2,
+    maxTokens: 8000,
+  });
     const E2B_API_KEY = process.env.E2B_API_KEY;
     if (!E2B_API_KEY) {
         throw new Error("E2B_API_KEY is not set in environment variables");
     }
     
-    const rawBashHandler = handleBashTool(sandbox.sandboxId, E2B_API_KEY);
+    const rawBashHandler = handleBashTool({ sandboxId: sandbox.sandboxId });
 
     return {
         fsAgentRunAgent: (config) => invokeModel({ config, model, redis, client }),

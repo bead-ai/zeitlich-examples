@@ -34,7 +34,7 @@ export async function mainAgentWorkflow({
   const session = await createSession({
     threadId: temporalRunId,
     agentName: "main-agent",
-    maxTurns: 10,
+    maxTurns: 40,
     runAgent,
     baseSystemPrompt: 'You are a helpful LLM agent',
     instructionsPrompt: 'Start working on the tasks you are given using the tools available to you',

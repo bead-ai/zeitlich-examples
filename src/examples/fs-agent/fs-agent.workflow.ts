@@ -3,9 +3,9 @@ import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
   createSession,
-  type AgentState,
 } from "zeitlich/workflow";
 import type { FsAgentActivities } from "./fs-agent.activities";
+import { bashTool } from "./tools/e2bBashTool/tool";
 
 const {
   fsAgentRunAgent: runAgent,
@@ -26,7 +26,7 @@ export async function fsAgentWorkflow({
   prompt,
 }: {
   prompt: string;
-}): Promise<AgentState<{ chatMessages: StoredMessage[] }>> {
+}): Promise<string> {
   const { runId: temporalRunId } = workflowInfo();
   const stateManager = createAgentStateManager({
     chatMessages: [] as StoredMessage[],
@@ -35,7 +35,7 @@ export async function fsAgentWorkflow({
   const session = await createSession({
     threadId: temporalRunId,
     agentName: "fs-subagent",
-    maxTurns: 20,
+    maxTurns: 40,
     runAgent,
     baseSystemPrompt: `You are a filesystem specialist agent with access to a sandboxed environment via a Bash tool.
 
@@ -52,12 +52,15 @@ CRITICAL RULES FOR CONTEXT EFFICIENCY:
       return [{ type: "text" as const, text: prompt }];
     },
     buildFileTree: generateFileTree,
-    buildInTools: {
-      Bash: handleBashToolResult,
-    },
+    tools: {
+      BashTool: {
+        ...bashTool,
+        handler: handleBashToolResult,
+      }
+    }
   });
 
-  await session.runSession({ stateManager });
+ const StoredMessage = await session.runSession({ stateManager });
 
-  return stateManager.getCurrentState();
+ return StoredMessage?.data.content ?? "something exploded";
 }

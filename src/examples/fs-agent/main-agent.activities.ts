@@ -1,9 +1,10 @@
-import { ChatBedrockConverse } from "@langchain/aws";
 import type { RunAgentActivity} from "zeitlich";
-import { toTree, invokeModel } from "zeitlich";
+import { invokeModel } from "zeitlich";
+import { toTree } from "./tools/toTree";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
 import type { Sandbox } from "e2b";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 export interface MainAgentActivities {
     mainAgentRunAgent: RunAgentActivity;
@@ -17,17 +18,16 @@ type CreateMainAgentActivitiesIn = {
 }
 
 export function createMainAgentActivities({ redis, client, sandbox }: CreateMainAgentActivitiesIn): MainAgentActivities {
-    const model = new ChatBedrockConverse({
-        model: "us.anthropic.claude-opus-4-5-20251101-v1:0",
-        region: process.env.AWS_REGION || "us-east-1",
-        maxTokens: 8000,
-        additionalModelRequestFields: {
-          thinking: {
-            type: "enabled",
-            budget_tokens: 1024,
-          },
-        },
-      });
+  const model = new ChatAnthropic({
+    model: "claude-sonnet-4-5",
+    maxRetries: 2,
+    thinking: {
+      budget_tokens: 1024,
+      type: "enabled",
+    },
+    maxTokens: 8000,
+    betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
+  });
     
       return {
         mainAgentGenerateFileTree: async () => Promise.resolve(toTree(sandbox)),

@@ -13,7 +13,7 @@ async function run(): Promise<void> {
     taskQueue: "zukunft",
     args: [
       {
-        prompt: `data folder contains all the data we need. What is the period of time that this reconciliation & confirmation is covering?`,
+        prompt: `data folder contains all the data we need. I want to know how many rows are in the spreadsheet`,
       },
     ],
     workflowId: "workflow-" + new Date().toISOString(),
