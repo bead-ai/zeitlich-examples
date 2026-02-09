@@ -8,8 +8,8 @@ import {
 import type { MainAgentActivities } from "./main-agent.activities";
 
 const {
-  runAgent,
-  generateFileTree,
+  mainAgentRunAgent: runAgent,
+  mainAgentGenerateFileTree: generateFileTree,
 } = proxyActivities<MainAgentActivities>({
   startToCloseTimeout: "30m",
   retry: {

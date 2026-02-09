@@ -35,14 +35,19 @@ export async function fsAgentWorkflow({
   const session = await createSession({
     threadId: temporalRunId,
     agentName: "fs-subagent",
-    maxTurns: 100,
+    maxTurns: 20,
     runAgent,
-    baseSystemPrompt: `You are a filesystem specialist agent with full access to a sandboxed filesystem environment. Your role is to assist with file operations, directory management, code exploration, and any filesystem-related tasks delegated to you.
+    baseSystemPrompt: `You are a filesystem specialist agent with access to a sandboxed environment via a Bash tool.
 
-You have access to a Bash tool that allows you to execute shell commands. Use standard Unix commands like ls, cat, grep, find, mkdir, touch, cp, mv, rm, head, tail, wc, and others to accomplish your tasks.
-
-Always be thorough and precise in your responses. When exploring files or directories, provide clear summaries of what you find. When making changes, confirm what was done.`,
-    instructionsPrompt: `Complete the filesystem task you've been given. Use the Bash tool to execute commands as needed. Be methodical: first understand the current state, then perform the required operations, and finally verify the results.`,
+CRITICAL RULES FOR CONTEXT EFFICIENCY:
+- Combine related commands into a single Bash call using && or ;
+- NEVER cat entire files — use head -n 50, tail -n 50, or grep to read only what you need
+- NEVER use find without -maxdepth — always limit to -maxdepth 2 or 3
+- For large directories, use ls (not ls -R) and explore incrementally
+- Pipe through head or tail when output could be large (e.g. grep -r ... | head -30)
+- Summarize findings concisely — do not repeat raw command output in your response
+- Plan your approach first, then execute with minimal commands`,
+    instructionsPrompt: `Complete the filesystem task you've been given. Be efficient: batch commands, limit output size, and finish as quickly as possible. Do NOT explore more than necessary.`,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
     },

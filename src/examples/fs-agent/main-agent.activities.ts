@@ -3,26 +3,23 @@ import type { RunAgentActivity} from "zeitlich";
 import { toTree, invokeModel } from "zeitlich";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
-import { OverlayFs } from "just-bash";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
+import type { Sandbox } from "e2b";
 
 export interface MainAgentActivities {
-    runAgent: RunAgentActivity;
-    generateFileTree: () => Promise<string>;
+    mainAgentRunAgent: RunAgentActivity;
+    mainAgentGenerateFileTree: () => Promise<string>;
 }
 
 type CreateMainAgentActivitiesIn = {
     redis: Redis,
     client: WorkflowClient,
+    sandbox: Sandbox,
 }
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export function createMainAgentActivities({redis, client}: CreateMainAgentActivitiesIn): MainAgentActivities {
+export function createMainAgentActivities({ redis, client, sandbox }: CreateMainAgentActivitiesIn): MainAgentActivities {
     const model = new ChatBedrockConverse({
         model: "us.anthropic.claude-opus-4-5-20251101-v1:0",
-        region: process.env.AWS_REGION || "us-west-2",
+        region: process.env.AWS_REGION || "us-east-1",
         maxTokens: 8000,
         additionalModelRequestFields: {
           thinking: {
@@ -31,11 +28,9 @@ export function createMainAgentActivities({redis, client}: CreateMainAgentActivi
           },
         },
       });
-      
-      const fs = new OverlayFs({ root: __dirname, mountPoint: "/home/user" });
     
       return {
-        generateFileTree: async () => Promise.resolve(toTree(fs)),
-        runAgent: (config) => invokeModel({ config, model, redis, client }),
+        mainAgentGenerateFileTree: async () => Promise.resolve(toTree(sandbox)),
+        mainAgentRunAgent: (config) => invokeModel({ config, model, redis, client }),
       };
 }
