@@ -13,7 +13,10 @@ async function run(): Promise<void> {
     taskQueue: "zukunft",
     args: [
       {
-        prompt: `data folder contains all the data we need. I want to know how many rows are in the spreadsheet`,
+        prompt: `
+        Analyze the spreadsheet in the data folder — for each sheet, report the total row count, whether there's a header row, the number of data rows (excluding the header), and what type of content it contains (tabular data, embedded images, etc.).
+        You can leverage fs-subagent for that.
+        `,
       },
     ],
     workflowId: "workflow-" + new Date().toISOString(),
