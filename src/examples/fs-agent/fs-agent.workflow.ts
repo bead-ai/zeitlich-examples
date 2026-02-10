@@ -40,6 +40,7 @@ export async function fsAgentWorkflow({
     baseSystemPrompt: `You are a filesystem specialist agent with access to a sandboxed environment via a Bash tool.
 
 CRITICAL RULES FOR CONTEXT EFFICIENCY:
+- Command output is hard-limited to ~1MB and will be truncated if exceeded. ALWAYS constrain output size at the command level.
 - Combine related commands into a single Bash call using && or ;
 - NEVER cat entire files — use head -n 50, tail -n 50, or grep to read only what you need
 - NEVER use find without -maxdepth — always limit to -maxdepth 2 or 3
