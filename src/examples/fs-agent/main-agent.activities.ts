@@ -1,6 +1,6 @@
 import type { RunAgentActivity} from "zeitlich";
 import { invokeModel } from "zeitlich";
-import { toTree } from "./tools/toTree";
+import { toTree } from "./utils/toTree";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
 import type { Sandbox } from "e2b";
