@@ -1,7 +1,7 @@
 import type { RunAgentActivity } from "zeitlich";
 import { invokeModel } from "zeitlich";
 import { handleBashTool } from "./tools/e2bBashTool/handle";
-import { handleStructuredOutputFormatter } from "./tools/structuredOutputFormatterTool/handle";
+import { structuredSummary } from "./utils/structuredSummary";
 import { toTree } from "./utils/toTree";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
@@ -21,7 +21,7 @@ export interface FsAgentActivities {
     fsAgentRunAgent: RunAgentActivity,
     fsAgentGenerateFileTree: () => Promise<string>,
     fsAgentHandleBashToolResult: ReturnType<typeof handleBashTool>,
-    fsAgentHandleStructuredOutputFormatter: typeof handleStructuredOutputFormatter,
+    fsAgentStructuredSummary: (summary: string) => Promise<string>,
 }
 
 type CreateFsAgentActivitiesIn = {
@@ -53,6 +53,9 @@ export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgen
                 : result.toolResponse;
             return { ...result, content };
         },
-        fsAgentHandleStructuredOutputFormatter: handleStructuredOutputFormatter,
+        fsAgentStructuredSummary: async (summary: string) => {
+            const result = await structuredSummary(summary);
+            return JSON.stringify(result, null, 2);
+        },
     };
 }

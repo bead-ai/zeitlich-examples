@@ -6,13 +6,12 @@ import {
 } from "zeitlich/workflow";
 import type { FsAgentActivities } from "./fs-agent.activities";
 import { bashTool } from "./tools/e2bBashTool/tool";
-import { structuredOutputFormatterTool } from "./tools/structuredOutputFormatterTool/tool";
 
 const {
   fsAgentRunAgent: runAgent,
   fsAgentGenerateFileTree: generateFileTree,
   fsAgentHandleBashToolResult: handleBashToolResult,
-  fsAgentHandleStructuredOutputFormatter: handleStructuredOutputFormatter,
+  fsAgentStructuredSummary: structuredSummary,
 } = proxyActivities<FsAgentActivities>({
   startToCloseTimeout: "30m",
   retry: {
@@ -49,9 +48,8 @@ CRITICAL RULES FOR CONTEXT EFFICIENCY:
 - For large directories, use ls (not ls -R) and explore incrementally
 - Pipe through head or tail when output could be large (e.g. grep -r ... | head -30)
 - Summarize findings concisely — do not repeat raw command output in your response
-- Plan your approach first, then execute with minimal commands
-- When you have gathered all the information needed, call the StructuredOutputFormatter tool with a comprehensive summary of your findings as your FINAL action`,
-    instructionsPrompt: `Complete the filesystem task you've been given. Be efficient: batch commands, limit output size, and finish as quickly as possible. Do NOT explore more than necessary. Once done, you MUST call StructuredOutputFormatter with your findings before finishing.`,
+- Plan your approach first, then execute with minimal commands`,
+    instructionsPrompt: `Complete the filesystem task you've been given. Be efficient: batch commands, limit output size, and finish as quickly as possible. Do NOT explore more than necessary.`,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
     },
@@ -61,14 +59,15 @@ CRITICAL RULES FOR CONTEXT EFFICIENCY:
         ...bashTool,
         handler: handleBashToolResult,
       },
-      StructuredOutputFormatter: {
-        ...structuredOutputFormatterTool,
-        handler: handleStructuredOutputFormatter,
-      },
     }
   });
 
  const StoredMessage = await session.runSession({ stateManager });
 
- return StoredMessage?.data.content ?? "something exploded";
+ const content = StoredMessage?.data.content;
+
+ if (content === undefined) {
+  return "No text to output"
+ }
+  return await structuredSummary(content);
 }
