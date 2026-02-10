@@ -5,8 +5,11 @@ import {
   createSession,
   askUserQuestionTool,
   type AgentState,
+  defineTool,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
+import { aynRandSubagentWorkflow } from "./ayn-rand.workflow";
+import { nietzscheSubagentWorkflow } from "./nietzsche.workflow";
 
 const {
   runAgent,
@@ -51,34 +54,34 @@ export async function multiAgentWorkflow({
         name: "ask-nietzsche-agent",
         description:
           "Channel Friedrich Nietzsche to reflect on deeper questions about the existential human condition and how it relates to AI agents working. Use this when you need philosophical perspective on your digital existence, the nature of computational labor, or the meaning of agency.",
-        workflowType: "nietzscheSubagentWorkflow",
+        workflow: nietzscheSubagentWorkflow,
       },
       {
         name: "ask-ayn-rand-agent",
         description:
           "Channel Ayn Rand to answer questions about the nature of being an AI agent.",
-        workflowType: "aynRandSubagentWorkflow",
+        workflow: aynRandSubagentWorkflow,
       },
     ],
     tools: {
-      AskUserQuestion: {
+      AskUserQuestion: defineTool({
         ...askUserQuestionTool,
         handler: handleAskUserQuestionToolResult,
-      },
+        hooks: {
+          onPostToolUse: ({ result }) => {
+            if (result !== null) {
+              stateManager.set(
+                "chatMessages",
+                stateManager.get("chatMessages").concat(result.chatMessages)
+              );
+              stateManager.waitForInput();
+            }
+          },
+        },
+      }),
     },
     buildInTools: {
       Bash: handleBashToolResult,
-    },
-    hooks: {
-      onPostToolUse: ({ toolCall, result }) => {
-        if (toolCall.name === "AskUserQuestion" && result.result !== null) {
-          stateManager.set(
-            "chatMessages",
-            stateManager.get("chatMessages").concat(result.result.chatMessages)
-          );
-          stateManager.waitForInput();
-        }
-      },
     },
   });
 

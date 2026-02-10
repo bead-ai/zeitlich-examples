@@ -39,7 +39,7 @@ export const createMainAgentActivities = ({
   });
 
   return {
-    handleBashToolResult: handleBashTool(inMemoryFileSystem),
+    handleBashToolResult: handleBashTool({ fs: inMemoryFileSystem }),
     generateFileTree: async () => Promise.resolve(toTree(inMemoryFileSystem)),
     runAgent: (config) => invokeModel({ config, model, redis, client }),
     handleAskUserQuestionToolResult,
