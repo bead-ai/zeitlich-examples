@@ -21,6 +21,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@boundaryml/baml": "^0.218.1",
     "@e2b/code-interpreter": "^2.3.3",
     "@langchain/anthropic": "^1.3.13",
     "@langchain/aws": "^1.2.2",
