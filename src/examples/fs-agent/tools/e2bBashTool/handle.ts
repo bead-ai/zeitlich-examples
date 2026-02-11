@@ -48,14 +48,14 @@ export const handleBashTool: (bashToolOptions: BashToolOptions) =>
       : "";
 
     return {
-      content: `Exit code: ${exitCode}\n\nstdout:\n${stdoutResult.text}\n\nstderr:\n${stderrResult.text}${truncationWarning}`,
-      result: bashExecOut,
+      toolResponse: `Exit code: ${exitCode}\n\nstdout:\n${stdoutResult.text}\n\nstderr:\n${stderrResult.text}${truncationWarning}`,
+      data: bashExecOut,
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error("Unknown error");
     return {
-      content: `Error executing bash command: ${err.message}`,
-      result: null,
+      toolResponse: `Error executing bash command: ${err.message}`,
+      data: null,
     };
   }
 };

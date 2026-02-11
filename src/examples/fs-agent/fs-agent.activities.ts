@@ -46,9 +46,9 @@ export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgen
         fsAgentGenerateFileTree: async () => Promise.resolve(toTree(sandbox)),
         fsAgentHandleBashToolResult: async (args: Parameters<typeof rawBashHandler>[0], context: Parameters<typeof rawBashHandler>[1]) => {
             const result = await rawBashHandler(args, context);
-            const content = typeof result.content === "string"
-                ? truncate(result.content, "output")
-                : result.content;
+            const content = typeof result.toolResponse === "string"
+                ? truncate(result.toolResponse, "output")
+                : result.toolResponse;
             return { ...result, content };
         },
     };

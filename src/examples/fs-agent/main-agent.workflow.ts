@@ -6,6 +6,7 @@ import {
   type AgentState,
 } from "zeitlich/workflow";
 import type { MainAgentActivities } from "./main-agent.activities";
+import { fsAgentWorkflow } from "./fs-agent.workflow";
 
 const {
   mainAgentRunAgent: runAgent,
@@ -46,7 +47,7 @@ export async function mainAgentWorkflow({
         {
             name: "fs-subagent",
             description: "A subagent you can leverage to ask any filesystem related questions you'd like. Subagent has full access to the filesystem as the name implies",
-            workflowType: "fsAgentWorkflow",
+            workflow: fsAgentWorkflow,
         }
     ],
   });
