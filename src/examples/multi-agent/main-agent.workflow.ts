@@ -15,6 +15,7 @@ const {
   runAgent,
   handleAskUserQuestionToolResult,
   generateFileTree,
+  handleBashToolResult,
 } = proxyActivities<MainAgentActivities>({
   startToCloseTimeout: "30m",
   retry: {
@@ -79,16 +80,8 @@ export async function multiAgentWorkflow({
         },
       }),
     },
-    hooks: {
-      onPostToolUse: ({ toolCall, result }) => {
-        if (toolCall.name === "AskUserQuestion" && result.result !== null) {
-          stateManager.set(
-            "chatMessages",
-            stateManager.get("chatMessages").concat(result.result.chatMessages)
-          );
-          stateManager.waitForInput();
-        }
-      },
+    buildInTools: {
+      Bash: handleBashToolResult,
     },
   });
 
