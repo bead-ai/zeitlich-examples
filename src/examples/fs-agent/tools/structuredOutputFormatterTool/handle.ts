@@ -11,7 +11,7 @@ export const handleStructuredOutputFormatter: ActivityToolHandler<
   const result = await b.ExtractSpreadsheet(summary);
 
   return {
-    content: JSON.stringify(result, null, 2),
-    result,
+    toolResponse: JSON.stringify(result, null, 2),
+    data: null,
   };
 };

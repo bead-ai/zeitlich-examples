@@ -36,12 +36,11 @@ export const handleBashTool: (bashToolOptions: BashToolOptions) =>
   try {
     const sandbox = await Sandbox.connect(sandboxId);
 
-    const commandResult = await sandbox.commands.run(command);
+    const commandResult = await sandbox.commands.run(command, { timeoutMs: 0 });
     const { exitCode, stderr, stdout } = commandResult;
 
     const stdoutResult = truncate(stdout, "stdout");
     const stderrResult = truncate(stderr, "stderr");
-    const bashExecOut = { exitCode, stderr: stderrResult.text, stdout: stdoutResult.text };
 
     const truncationWarning = (stdoutResult.truncated || stderrResult.truncated)
       ? "\n\n⚠️ Output was truncated because it exceeded the size limit. Use head, tail, or grep to narrow the output."
@@ -49,7 +48,7 @@ export const handleBashTool: (bashToolOptions: BashToolOptions) =>
 
     return {
       toolResponse: `Exit code: ${exitCode}\n\nstdout:\n${stdoutResult.text}\n\nstderr:\n${stderrResult.text}${truncationWarning}`,
-      data: bashExecOut,
+      data: null,
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error("Unknown error");
