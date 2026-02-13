@@ -32,7 +32,11 @@ type CreateFsAgentActivitiesIn = {
 
 export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgentActivitiesIn): FsAgentActivities {
   const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
+    model: "claude-opus-4-5-20251101",
+    thinking: {
+        budget_tokens: 4000,
+        type: "enabled",
+    },
     maxRetries: 2,
     maxTokens: 8000,
   });

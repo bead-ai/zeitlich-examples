@@ -19,15 +19,15 @@ type CreateMainAgentActivitiesIn = {
 
 export function createMainAgentActivities({ redis, client, sandbox }: CreateMainAgentActivitiesIn): MainAgentActivities {
   const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
+    model: "claude-opus-4-5-20251101",
     maxRetries: 2,
     thinking: {
-      budget_tokens: 1024,
+      budget_tokens: 4000,
       type: "enabled",
     },
     maxTokens: 8000,
     betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
-  });
+});
     
       return {
         mainAgentGenerateFileTree: async () => Promise.resolve(toTree(sandbox)),
