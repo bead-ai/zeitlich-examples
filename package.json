@@ -28,7 +28,7 @@
     "dotenv": "^17.2.3",
     "ioredis": "^5.9.2",
     "just-bash": "^2.9.2",
-    "zeitlich": "^0.2.4"
+    "zeitlich": "^0.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

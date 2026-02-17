@@ -2,7 +2,6 @@ import { proxyActivities, workflowInfo } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
-  proxyDefaultThreadOps,
   type SubagentInput,
 } from "zeitlich/workflow";
 import type { createAynRandSubagentActivities } from "./activities";
@@ -31,7 +30,6 @@ export async function aynRandSubagentWorkflow({
   const session = await createSession({
     ...agentConfig,
     threadId: temporalRunId,
-    threadOps: proxyDefaultThreadOps(),
     runAgent: runAynRandAgent,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
@@ -43,7 +41,7 @@ export async function aynRandSubagentWorkflow({
 }
 
 export const aynRandSubagent = {
-  name: agentConfig.agentName,
+  agentName: agentConfig.agentName,
   description: agentConfig.description,
   workflow: aynRandSubagentWorkflow,
 };

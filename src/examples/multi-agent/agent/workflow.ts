@@ -6,7 +6,6 @@ import {
   askUserQuestionTool,
   defineTool,
   bashTool,
-  proxyDefaultThreadOps,
 } from "zeitlich/workflow";
 import { aynRandSubagent } from "./subagents/ayn-rand/workflow";
 import { nietzscheSubagent } from "./subagents/nietzsche/workflow";
@@ -42,7 +41,6 @@ export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
     ...agentConfig,
     threadId: temporalRunId,
     runAgent: runAgentActivity,
-    threadOps: proxyDefaultThreadOps(),
     buildContextMessage: () => {
       return [
         { type: "text", text: `Files in the filesystem: ${fileTree}` },

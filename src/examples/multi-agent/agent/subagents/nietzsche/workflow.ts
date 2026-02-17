@@ -2,7 +2,6 @@ import { proxyActivities, workflowInfo } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
-  proxyDefaultThreadOps,
   type SubagentInput,
 } from "zeitlich/workflow";
 import type { createNietzscheSubagentActivities } from "./activities";
@@ -30,7 +29,6 @@ export async function nietzscheSubagentWorkflow({
   const session = await createSession({
     ...agentConfig,
     threadId: temporalRunId,
-    threadOps: proxyDefaultThreadOps(),
     runAgent: runNietzscheAgentActivity,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
@@ -42,7 +40,7 @@ export async function nietzscheSubagentWorkflow({
 }
 
 export const nietzscheSubagent = {
-  name: agentConfig.agentName,
+  agentName: agentConfig.agentName,
   description: agentConfig.description,
   workflow: nietzscheSubagentWorkflow,
 };
