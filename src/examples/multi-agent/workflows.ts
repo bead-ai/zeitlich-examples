@@ -3,6 +3,6 @@
  * All workflows must be exported here to be registered with the worker
  */
 
-export { multiAgentWorkflow } from "./main-agent.workflow";
-export { nietzscheSubagentWorkflow } from "./nietzsche.workflow";
-export { aynRandSubagentWorkflow } from "./ayn-rand.workflow";
+export { multiAgentWorkflow } from "./agent/workflow";
+export { nietzscheSubagentWorkflow } from "./agent/subagents/nietzsche/workflow";
+export { aynRandSubagentWorkflow } from "./agent/subagents/ayn-rand/workflow";

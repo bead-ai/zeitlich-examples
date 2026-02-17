@@ -2,9 +2,9 @@ import "dotenv/config";
 
 import { fileURLToPath } from "node:url";
 import { NativeConnection, Worker } from "@temporalio/worker";
-import { createMainAgentActivities } from "./main-agent.activities";
-import { createNietzscheSubagentActivities } from "./nietzsche.activities";
-import { createAynRandSubagentActivities } from "./ayn-rand.activities";
+import { createMainAgentActivities } from "./agent/activities";
+import { createNietzscheSubagentActivities } from "./agent/subagents/nietzsche/activities";
+import { createAynRandSubagentActivities } from "./agent/subagents/ayn-rand/activities";
 import { ZeitlichPlugin } from "zeitlich";
 import Redis from "ioredis";
 import { Client } from "@temporalio/client";

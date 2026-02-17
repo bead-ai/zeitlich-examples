@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { Connection, Client } from "@temporalio/client";
 import { loadClientConnectConfig } from "@temporalio/envconfig";
-import { multiAgentWorkflow } from "./main-agent.workflow";
+import { multiAgentWorkflow } from "./agent/workflow";
 
 async function run(): Promise<void> {
   const config = loadClientConnectConfig();
