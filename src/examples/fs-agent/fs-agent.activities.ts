@@ -1,13 +1,14 @@
 import type { RunAgentActivity } from "zeitlich";
 import { invokeModel } from "zeitlich";
 import { handleBashTool } from "./tools/e2bBashTool/handle";
-import { toTree } from "./tools/toTree";
+import { structuredSummary } from "./utils/structuredSummary";
+import { toTree } from "./utils/toTree";
 import type Redis from "ioredis";
 import type { WorkflowClient } from "@temporalio/client";
 import type { Sandbox } from "e2b";
 import { ChatAnthropic } from "@langchain/anthropic";
 
-const MAX_OUTPUT_CHARS = 16_000;
+const MAX_OUTPUT_CHARS = 4_000;
 
 function truncate(text: string, label: string): string {
     if (text.length <= MAX_OUTPUT_CHARS) return text;
@@ -20,6 +21,7 @@ export interface FsAgentActivities {
     fsAgentRunAgent: RunAgentActivity,
     fsAgentGenerateFileTree: () => Promise<string>,
     fsAgentHandleBashToolResult: ReturnType<typeof handleBashTool>,
+    fsAgentStructuredSummary: (summary: string) => Promise<string>,
 }
 
 type CreateFsAgentActivitiesIn = {
@@ -30,7 +32,11 @@ type CreateFsAgentActivitiesIn = {
 
 export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgentActivitiesIn): FsAgentActivities {
   const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
+    model: "claude-opus-4-5-20251101",
+    thinking: {
+        budget_tokens: 4000,
+        type: "enabled",
+    },
     maxRetries: 2,
     maxTokens: 8000,
   });
@@ -46,10 +52,14 @@ export function createFsAgentActivities({ redis, client, sandbox }: CreateFsAgen
         fsAgentGenerateFileTree: async () => Promise.resolve(toTree(sandbox)),
         fsAgentHandleBashToolResult: async (args: Parameters<typeof rawBashHandler>[0], context: Parameters<typeof rawBashHandler>[1]) => {
             const result = await rawBashHandler(args, context);
-            const content = typeof result.toolResponse === "string"
+            const toolResponse = typeof result.toolResponse === "string"
                 ? truncate(result.toolResponse, "output")
                 : result.toolResponse;
-            return { ...result, content };
+            return { ...result, toolResponse };
+        },
+        fsAgentStructuredSummary: async (summary: string) => {
+            const result = await structuredSummary(summary);
+            return JSON.stringify(result, null, 2);
         },
     };
 }

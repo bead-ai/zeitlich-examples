@@ -36,7 +36,7 @@ async function run(): Promise<void> {
         throw new Error("E2B_API_KEY is not set in environment variables");
     }
 
-    const sandbox = await Sandbox.create();
+    const sandbox = await Sandbox.create('xp68wnda88nt5dl6ebl8');
     console.log(`Created sandbox: ${sandbox.sandboxId}`);
 
     const content = fs.readFileSync(path.resolve(__dirname, "./data.zip"));

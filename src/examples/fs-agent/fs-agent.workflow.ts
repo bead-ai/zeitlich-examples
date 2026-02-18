@@ -9,7 +9,6 @@ import { bashTool } from "./tools/e2bBashTool/tool";
 
 const {
   fsAgentRunAgent: runAgent,
-  fsAgentGenerateFileTree: generateFileTree,
   fsAgentHandleBashToolResult: handleBashToolResult,
 } = proxyActivities<FsAgentActivities>({
   startToCloseTimeout: "30m",
@@ -52,16 +51,22 @@ CRITICAL RULES FOR CONTEXT EFFICIENCY:
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
     },
-    buildFileTree: generateFileTree,
     tools: {
       BashTool: {
         ...bashTool,
         handler: handleBashToolResult,
-      }
+      },
     }
   });
 
  const StoredMessage = await session.runSession({ stateManager });
 
- return StoredMessage?.data.content ?? "something exploded";
+ const content = StoredMessage?.data.content;
+
+ console.log('Finishing FSWorkflow. Cycle report:', stateManager.getCurrentState());
+
+ if (content === undefined) {
+  return "No text to output"
+ }
+  return content;
 }

@@ -14,8 +14,7 @@ async function run(): Promise<void> {
     args: [
       {
         prompt: `
-        Analyze the spreadsheet in the data folder — for each sheet, report the total row count, whether there's a header row, the number of data rows (excluding the header), and what type of content it contains (tabular data, embedded images, etc.).
-        You can leverage fs-subagent for that.
+        Using the spreadsheet, answer - did all attributes pass for all samples?
         `,
       },
     ],
