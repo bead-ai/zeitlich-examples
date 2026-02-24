@@ -31,12 +31,17 @@ export const createMainAgentActivities = ({
     betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
   });
 
+  // Async wrapper: ToolHandler returns sync-or-async, Temporal requires Promise
+  const askQuestionHandler = createAskUserQuestionHandler();
+
   return {
     generateFileTreeActivity: async () =>
       Promise.resolve(toTree(inMemoryFileSystem)),
     runAgentActivity: (config: InvokeModelConfig) =>
       invokeModel({ config, model, redis, client }),
     bashHandlerActivity: createBashHandler({ fs: inMemoryFileSystem }),
-    askUserQuestionHandlerActivity: createAskUserQuestionHandler(),
+    askUserQuestionHandlerActivity: async (
+      ...args: Parameters<typeof askQuestionHandler>
+    ) => askQuestionHandler(...args),
   };
 };
