@@ -1,11 +1,11 @@
 import { proxyActivities, workflowInfo } from "@temporalio/workflow";
-import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
   createSession,
   askUserQuestionTool,
   defineTool,
   bashTool,
+  type AskUserQuestionArgs,
 } from "zeitlich/workflow";
 import { aynRandSubagent } from "./subagents/ayn-rand/workflow";
 import { nietzscheSubagent } from "./subagents/nietzsche/workflow";
@@ -31,9 +31,11 @@ const {
 export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
   const { runId: temporalRunId } = workflowInfo();
   const stateManager = createAgentStateManager<{
-    chatMessages: StoredMessage[];
+    questionsAsked: AskUserQuestionArgs["questions"];
+    userResponses: string[];
   }>({
-    chatMessages: [],
+    initialState: { questionsAsked: [], userResponses: [] },
+    agentConfig,
   });
   const fileTree = await generateFileTreeActivity();
 
@@ -55,8 +57,8 @@ export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
         hooks: {
           onPostToolUse: ({ result }) => {
             stateManager.set(
-              "chatMessages",
-              stateManager.get("chatMessages").concat(result.chatMessages)
+              "questionsAsked",
+              stateManager.get("questionsAsked").concat(result.questions)
             );
             stateManager.waitForInput();
           },
@@ -67,9 +69,19 @@ export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
         handler: bashHandlerActivity,
       }),
     },
+    hooks: {
+      onPostHumanMessageAppend: ({ message }) => {
+        const text =
+          typeof message === "string" ? message : JSON.stringify(message);
+        stateManager.set("userResponses", [
+          ...stateManager.get("userResponses"),
+          text,
+        ]);
+      },
+    },
   });
 
-  const finalMessage = await session.runSession({ stateManager });
+  const { finalMessage } = await session.runSession({ stateManager });
 
   return finalMessage;
 }

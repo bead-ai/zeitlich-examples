@@ -25,7 +25,7 @@ export async function aynRandSubagentWorkflow({
 }: SubagentInput): Promise<string | null> {
   const { runId: temporalRunId } = workflowInfo();
 
-  const stateManager = createAgentStateManager();
+  const stateManager = createAgentStateManager({ agentConfig });
 
   const session = await createSession({
     ...agentConfig,
@@ -36,8 +36,8 @@ export async function aynRandSubagentWorkflow({
     },
   });
 
-  const message = await session.runSession({ stateManager });
-  return message ? await extractTextContent(message) : null;
+  const { finalMessage } = await session.runSession({ stateManager });
+  return finalMessage ? await extractTextContent(finalMessage) : null;
 }
 
 export const aynRandSubagent = {
