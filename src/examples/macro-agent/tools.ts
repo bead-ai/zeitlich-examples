@@ -9,15 +9,6 @@ export const agentXlsxTool = {
 
 Pass the full command after "agent-xlsx" (the "agent-xlsx" prefix is added automatically).
 All file paths are relative to the sandbox directory.
-
-Examples:
-- probe WDIEXCEL.xlsx
-- search WDIEXCEL.xlsx "GDP growth" --sheet Series --columns "Indicator Name" --limit 5
-- read WDIEXCEL.xlsx "A1:D10,BF1:BP10" --sheet Data
-- write Dashboard.xlsx "A1" --json '[[...]]' --formula
-- format Dashboard.xlsx "A1:M1" --font '{"bold": true}'
-- recalc Dashboard.xlsx
-
 Returns JSON to stdout on success, or an error object on failure.`,
   schema: z.object({
     command: z

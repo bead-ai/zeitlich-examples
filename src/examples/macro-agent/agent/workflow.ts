@@ -4,8 +4,12 @@ import {
   createSession,
   defineTool,
   defineSubagent,
+  bashTool,
 } from "zeitlich/workflow";
 import { agentXlsxTool } from "../tools";
+// Import directly from catalog.ts to avoid pulling just-bash into the workflow sandbox
+import { buildSkillCatalog } from "../../../lib/skills/catalog";
+import { skillsConfig } from "./skills-config";
 import { minerSubagent } from "./subagents/miner/workflow";
 import { modelerSubagent } from "./subagents/modeler/workflow";
 import type { createActivities } from "./activities";
@@ -15,6 +19,7 @@ const {
   runAgentActivity,
   fetchAndPrepareDataset,
   agentXlsxActivity,
+  bashHandlerActivity,
   readWorkspaceFileActivity,
 } = proxyActivities<ReturnType<typeof createActivities>>({
   startToCloseTimeout: "30m",
@@ -41,22 +46,24 @@ export async function orchestratorWorkflow({ prompt }: { prompt: string }) {
     ...agentConfig,
     systemPrompt: `<role>You are Herr Zeitlich, the orchestrator of a multi-agent macroeconomics data pipeline.</role>
 
-<context>The WDI dataset is ready at sandbox/${datasetFilename}. WDI data lags ~2 years — year columns exist for recent years but cells are often empty. This is normal, not a failure.</context>
+<context>The dataset is ready as ${datasetFilename}. All file paths used with the AgentXlsx tool are relative to the sandbox — use bare filenames (e.g. "${datasetFilename}", not "sandbox/${datasetFilename}"). World Bank data lags — recent-year columns may be empty. This is expected, not a failure.</context>
 
 <workflow>
 Follow this strict sequence. Complete each step exactly once — never go back to a previous step.
 1. Probe the dataset to understand its structure (sheets, column_map, row counts).
-2. Delegate to DataMiner — include the requested indicator names, country codes, and the column_map. The Miner discovers the exact WDI codes from the Series sheet and saves extracted data to sandbox/data.xlsx.
-3. Delegate to the Modeler — tell it to read from sandbox/data.xlsx and build Dashboard.xlsx with sections, headers, summary formulas, and formatting.
-4. QA-check sandbox/Dashboard.xlsx — read it to verify data, formulas, and formatting are present.
+2. Delegate to DataMiner — include the requested indicators, countries, and the column_map from your probe. The Miner saves extracted data to data.xlsx.
+3. Delegate to the Modeler — tell it to read from data.xlsx and build Dashboard.xlsx with sections, headers, summary formulas, and formatting.
+4. QA-check Dashboard.xlsx — read it to verify data, formulas, and formatting are present.
 5. Report the final result.
 </workflow>
 
 <rules>
 - Call each subagent exactly once. Only retry if it returns an explicit error (file not found, invalid command). Never retry because data is lagged or some years are null.
 - After the Miner returns data, move immediately to the Modeler. Do not re-run the Miner.
-- The Miner saves extracted data to sandbox/data.xlsx. Tell the Modeler to read from that file — do not re-state the data in the prompt.
-</rules>`,
+- Tell the Modeler to read from data.xlsx — do not re-state the data in the prompt.
+</rules>
+
+${buildSkillCatalog(skillsConfig)}`,
     threadId: temporalRunId,
     runAgent: runAgentActivity,
     buildContextMessage: () => {
@@ -67,6 +74,10 @@ Follow this strict sequence. Complete each step exactly once — never go back t
       AgentXlsx: defineTool({
         ...agentXlsxTool,
         handler: agentXlsxActivity,
+      }),
+      Bash: defineTool({
+        ...bashTool,
+        handler: bashHandlerActivity,
       }),
     },
   });

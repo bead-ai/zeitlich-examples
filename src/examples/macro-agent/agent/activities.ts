@@ -5,7 +5,14 @@ import {
   type AIMessage,
   type StoredMessage,
 } from "@langchain/core/messages";
-import { invokeModel, type InvokeModelConfig } from "zeitlich";
+import {
+  invokeModel,
+  createBashHandler,
+  type InvokeModelConfig,
+} from "zeitlich";
+import { createLoadSkillCommand } from "../../../lib/skills";
+import { skillsConfig } from "./skills-config";
+import { inMemoryFileSystem } from "./data";
 import type { WorkflowClient } from "@temporalio/client";
 import { createWriteStream } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -49,7 +56,7 @@ export const createActivities = ({
   client: WorkflowClient;
 }) => {
   const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-4-6",
     maxRetries: 2,
     maxTokens: 8000,
   });
@@ -118,8 +125,7 @@ export const createActivities = ({
       // Auto-quote bare --json arguments to prevent bash interpreting [[ as conditionals
       command = command.replace(
         /(--json\s+)(?!')(\[[\s\S]*\]|\{[\s\S]*\})/,
-        (_, prefix, json) =>
-          `${prefix}'${json.replace(/'/g, "'\\''")}'`
+        (_, prefix, json) => `${prefix}'${json.replace(/'/g, "'\\''")}'`
       );
 
       console.log(`[agentXlsx] Executing: agent-xlsx ${command}`);
@@ -156,6 +162,14 @@ export const createActivities = ({
     extractTextContentActivity: async (
       storedMessage: StoredMessage
     ): Promise<string | null> => extractTextContent(storedMessage),
+
+    // ─── Bash handler for skill loading (shared by all 3 agents) ─────
+    bashHandlerActivity: createBashHandler({
+      fs: inMemoryFileSystem,
+      customCommands: [
+        createLoadSkillCommand(skillsConfig, inMemoryFileSystem),
+      ],
+    }),
 
     // ─── Zeitlich model invocation (shared by all 3 agents) ──────────
     runAgentActivity: (config: InvokeModelConfig) =>

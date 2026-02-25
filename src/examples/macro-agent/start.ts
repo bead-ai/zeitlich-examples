@@ -3,7 +3,6 @@ import "dotenv/config";
 import { Connection, Client } from "@temporalio/client";
 import { loadClientConnectConfig } from "@temporalio/envconfig";
 import { orchestratorWorkflow } from "./agent/workflow";
-import { writeFile } from "node:fs/promises";
 
 async function run(): Promise<void> {
   const config = loadClientConnectConfig();
@@ -25,14 +24,6 @@ async function run(): Promise<void> {
 
   console.log(`Workflow started: ${handle.workflowId}`);
   const result = await handle.result();
-
-  // Save the returned Dashboard file locally
-  if (result.outputFile) {
-    const { filename, base64, sizeBytes } = result.outputFile;
-    await writeFile(filename, Buffer.from(base64, "base64"));
-    console.log(`Saved ${filename} (${sizeBytes} bytes)`);
-  }
-
   console.log("Result:", JSON.stringify(result.message, null, 2));
 }
 

@@ -144,5 +144,5 @@ vite.config.ts.timestamp-*
 # claude
 CLAUDE.local.md
 
-# macro-agent workspace (created at runtime, contains large data files)
-workspace/
+# macro-agent sandbox (created at runtime, contains large data files)
+sandbox/
