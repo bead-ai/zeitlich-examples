@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { NativeConnection, Worker } from "@temporalio/worker";
 import { createActivities } from "./agent/activities";
 import { initializeSandbox, teardownSandbox } from "./sandbox";
@@ -8,7 +9,20 @@ import { ZeitlichPlugin } from "zeitlich";
 import Redis from "ioredis";
 import { Client } from "@temporalio/client";
 
+/** Verify that the agent-xlsx CLI is installed and reachable on PATH. */
+function assertAgentXlsxInstalled(): void {
+  const result = spawnSync("which", ["agent-xlsx"], { encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(
+      "agent-xlsx CLI not found on PATH. Install it first: npm install -g agent-xlsx"
+    );
+  }
+}
+
 async function run(): Promise<void> {
+  // 0. Preflight — fail fast if required CLI tools are missing
+  assertAgentXlsxInstalled();
+
   // 1. Initialize sandbox BEFORE starting the worker
   await initializeSandbox();
   console.log("Sandbox initialized");
