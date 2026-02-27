@@ -1,3 +1,6 @@
+# OS
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -137,3 +140,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# claude
+CLAUDE.local.md
+
+# macro-agent sandbox (created at runtime, contains large data files)
+sandbox/

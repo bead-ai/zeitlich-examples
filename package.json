@@ -13,12 +13,15 @@
     "prepare": "husky",
     "dev:temporal": "temporal server start-dev",
     "worker:multi-agent": "tsx watch src/examples/multi-agent/worker.ts",
-    "start:multi-agent": "tsx src/examples/multi-agent/start.ts"
+    "start:multi-agent": "tsx src/examples/multi-agent/start.ts",
+    "worker:macro-agent": "tsx watch src/examples/macro-agent/worker.ts",
+    "start:macro-agent": "tsx src/examples/macro-agent/start.ts"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "^0.0.38",
     "@langchain/anthropic": "^1.3.13",
     "@langchain/core": "^1.1.18",
     "@temporalio/client": "^1.14.1",
@@ -28,13 +31,16 @@
     "dotenv": "^17.2.3",
     "ioredis": "^5.9.2",
     "just-bash": "^2.9.2",
-    "zeitlich": "^0.2.6"
+    "yauzl": "^3.2.0",
+    "zeitlich": "^0.2.6",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@temporalio/envconfig": "^1.14.1",
     "@temporalio/worker": "^1.14.1",
     "@types/node": "^20.11.0",
+    "@types/yauzl": "^2.10.3",
     "eslint": "^9.0.0",
     "husky": "^9.1.7",
     "prettier": "^3.2.0",
