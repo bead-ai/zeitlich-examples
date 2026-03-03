@@ -1,6 +1,5 @@
 {
   "name": "zeitlich-examples",
-  "version": "0.1.0",
   "private": true,
   "description": "Example app for Zeitlich – durable AI agents for Temporal",
   "type": "module",
