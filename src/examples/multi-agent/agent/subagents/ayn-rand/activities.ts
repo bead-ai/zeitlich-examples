@@ -12,7 +12,7 @@ import type { WorkflowClient } from "@temporalio/client";
 /**
  * Extracts text content from a StoredMessage
  */
-function extractTextContent(storedMessage: StoredMessage): string | null {
+function extractTextContent(storedMessage: StoredMessage): string {
   const message = mapStoredMessageToChatMessage(storedMessage) as AIMessage;
   const content = message.content;
   if (typeof content === "string") {
@@ -26,8 +26,9 @@ function extractTextContent(storedMessage: StoredMessage): string | null {
       )
       .map((part) => part.text)
       .join("\n");
+  } else {
+    throw new Error("Invalid content");
   }
-  return null;
 }
 
 /**
@@ -41,19 +42,21 @@ export const createAynRandSubagentActivities = ({
   redis: Redis;
   client: WorkflowClient;
 }) => {
-  const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
-    maxRetries: 2,
-    thinking: {
-      budget_tokens: 3000,
-      type: "enabled",
-    },
-    maxTokens: 4000,
-    betas: ["interleaved-thinking-2025-05-14"],
-  });
-
   return {
-    runAynRandAgent: (config: InvokeModelConfig) => invokeModel({ config, model, redis, client }),
+    runAynRandAgent: (config: InvokeModelConfig) => {
+      const model = new ChatAnthropic({
+        model: "claude-sonnet-4-6",
+        maxRetries: 2,
+        thinking: {
+          budget_tokens: 3000,
+          type: "enabled",
+        },
+        maxTokens: 4000,
+        betas: ["interleaved-thinking-2025-05-14"],
+      });
+
+      return invokeModel({ config, model, redis, client });
+    },
     extractTextContent: async (storedMessage: StoredMessage) =>
       extractTextContent(storedMessage),
   };

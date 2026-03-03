@@ -2,7 +2,7 @@ import { proxyActivities, workflowInfo } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
-  type SubagentInput,
+  type SubagentWorkflow,
 } from "zeitlich/workflow";
 import type { createNietzscheSubagentActivities } from "./activities";
 import { agentConfig } from "./config";
@@ -19,13 +19,16 @@ const { runNietzscheAgentActivity, extractTextContentActivity } =
     heartbeatTimeout: "5m",
   });
 
-export async function nietzscheSubagentWorkflow({
+export const nietzscheSubagentWorkflow: SubagentWorkflow = async ({
   prompt,
-}: SubagentInput): Promise<string | null> {
+}) => {
   const { runId: temporalRunId } = workflowInfo();
 
   const stateManager = createAgentStateManager({
-    agentConfig: agentConfig,
+    initialState: {
+      systemPrompt: agentConfig.systemPrompt,
+    },
+    agentName: agentConfig.agentName,
   });
 
   const session = await createSession({
@@ -38,8 +41,14 @@ export async function nietzscheSubagentWorkflow({
   });
 
   const { finalMessage } = await session.runSession({ stateManager });
-  return finalMessage ? await extractTextContentActivity(finalMessage) : null;
-}
+
+  return {
+    toolResponse: finalMessage
+      ? await extractTextContentActivity(finalMessage)
+      : "No response from Nietzsche",
+    data: null,
+  };
+};
 
 export const nietzscheSubagent = {
   agentName: agentConfig.agentName,

@@ -20,22 +20,23 @@ export const createMainAgentActivities = ({
   redis: Redis;
   client: WorkflowClient;
 }) => {
-  const model = new ChatAnthropic({
-    model: "claude-sonnet-4-5",
-    maxRetries: 2,
-    thinking: {
-      budget_tokens: 1024,
-      type: "enabled",
-    },
-    maxTokens: 4000,
-    betas: ["advanced-tool-use-2025-11-20", "interleaved-thinking-2025-05-14"],
-  });
-
   return {
     generateFileTreeActivity: async () =>
       Promise.resolve(toTree(inMemoryFileSystem)),
-    runAgentActivity: (config: InvokeModelConfig) =>
-      invokeModel({ config, model, redis, client }),
+    runAgentActivity: (config: InvokeModelConfig) => {
+      const model = new ChatAnthropic({
+        model: "claude-sonnet-4-6",
+        maxRetries: 2,
+        thinking: {
+          budget_tokens: 1024,
+          type: "enabled",
+        },
+        maxTokens: 4000,
+        betas: ["interleaved-thinking-2025-05-14"],
+      });
+
+      return invokeModel({ config, model, redis, client });
+    },
     bashHandlerActivity: createBashHandler({ fs: inMemoryFileSystem }),
     askUserQuestionHandlerActivity: createAskUserQuestionHandler(),
   };

@@ -2,7 +2,7 @@ import { proxyActivities, workflowInfo } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
-  type SubagentInput,
+  type SubagentWorkflow,
 } from "zeitlich/workflow";
 import type { createAynRandSubagentActivities } from "./activities";
 import { agentConfig } from "./config";
@@ -20,13 +20,14 @@ const { runAynRandAgent, extractTextContent } = proxyActivities<
   heartbeatTimeout: "5m",
 });
 
-export async function aynRandSubagentWorkflow({
-  prompt,
-}: SubagentInput): Promise<string | null> {
+export const aynRandSubagentWorkflow: SubagentWorkflow = async ({ prompt }) => {
   const { runId: temporalRunId } = workflowInfo();
 
   const stateManager = createAgentStateManager({
-    agentConfig: agentConfig,
+    initialState: {
+      systemPrompt: agentConfig.systemPrompt,
+    },
+    agentName: agentConfig.agentName,
   });
 
   const session = await createSession({
@@ -39,8 +40,13 @@ export async function aynRandSubagentWorkflow({
   });
 
   const { finalMessage } = await session.runSession({ stateManager });
-  return finalMessage ? await extractTextContent(finalMessage) : null;
-}
+  return {
+    toolResponse: finalMessage
+      ? await extractTextContent(finalMessage)
+      : "No response from Ayn Rand",
+    data: null,
+  };
+};
 
 export const aynRandSubagent = {
   agentName: agentConfig.agentName,

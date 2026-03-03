@@ -30,7 +30,10 @@ const {
 export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
   const { runId: temporalRunId } = workflowInfo();
   const stateManager = createAgentStateManager({
-    agentConfig: agentConfig,
+    initialState: {
+      systemPrompt: agentConfig.systemPrompt,
+    },
+    agentName: agentConfig.agentName,
   });
   const fileTree = await generateFileTreeActivity();
 
