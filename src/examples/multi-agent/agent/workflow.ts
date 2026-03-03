@@ -1,5 +1,4 @@
 import { proxyActivities, workflowInfo } from "@temporalio/workflow";
-import type { StoredMessage } from "@langchain/core/messages";
 import {
   createAgentStateManager,
   createSession,
@@ -30,10 +29,8 @@ const {
 
 export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
   const { runId: temporalRunId } = workflowInfo();
-  const stateManager = createAgentStateManager<{
-    chatMessages: StoredMessage[];
-  }>({
-    chatMessages: [],
+  const stateManager = createAgentStateManager({
+    agentConfig: agentConfig,
   });
   const fileTree = await generateFileTreeActivity();
 
@@ -53,11 +50,7 @@ export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
         ...askUserQuestionTool,
         handler: askUserQuestionHandlerActivity,
         hooks: {
-          onPostToolUse: ({ result }) => {
-            stateManager.set(
-              "chatMessages",
-              stateManager.get("chatMessages").concat(result.chatMessages)
-            );
+          onPostToolUse: () => {
             stateManager.waitForInput();
           },
         },

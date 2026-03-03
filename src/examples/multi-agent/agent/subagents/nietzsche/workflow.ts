@@ -24,7 +24,9 @@ export async function nietzscheSubagentWorkflow({
 }: SubagentInput): Promise<string | null> {
   const { runId: temporalRunId } = workflowInfo();
 
-  const stateManager = createAgentStateManager();
+  const stateManager = createAgentStateManager({
+    agentConfig: agentConfig,
+  });
 
   const session = await createSession({
     ...agentConfig,
@@ -35,8 +37,8 @@ export async function nietzscheSubagentWorkflow({
     },
   });
 
-  const message = await session.runSession({ stateManager });
-  return message ? await extractTextContentActivity(message) : null;
+  const { finalMessage } = await session.runSession({ stateManager });
+  return finalMessage ? await extractTextContentActivity(finalMessage) : null;
 }
 
 export const nietzscheSubagent = {
