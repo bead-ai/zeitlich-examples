@@ -5,7 +5,6 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 import { createMainAgentActivities } from "./agent/activities";
 import { createNietzscheSubagentActivities } from "./agent/subagents/nietzsche/activities";
 import { createAynRandSubagentActivities } from "./agent/subagents/ayn-rand/activities";
-import { ZeitlichPlugin } from "zeitlich";
 import Redis from "ioredis";
 import { Client } from "@temporalio/client";
 
@@ -23,7 +22,6 @@ async function run(): Promise<void> {
 
   try {
     const worker = await Worker.create({
-      plugins: [new ZeitlichPlugin({ redis })],
       connection,
       namespace: "default",
       taskQueue: "zeitlich",
@@ -31,7 +29,10 @@ async function run(): Promise<void> {
       workflowsPath: fileURLToPath(new URL("./workflows.ts", import.meta.url)),
       activities: {
         ...createMainAgentActivities({ redis, client: client.workflow }),
-        ...createNietzscheSubagentActivities({ redis, client: client.workflow }),
+        ...createNietzscheSubagentActivities({
+          redis,
+          client: client.workflow,
+        }),
         ...createAynRandSubagentActivities({ redis, client: client.workflow }),
       },
     });

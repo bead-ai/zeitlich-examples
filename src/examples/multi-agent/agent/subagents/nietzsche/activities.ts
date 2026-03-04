@@ -5,8 +5,8 @@ import {
   type AIMessage,
   type StoredMessage,
 } from "@langchain/core/messages";
-import { invokeModel } from "zeitlich";
-import type { InvokeModelConfig } from "zeitlich";
+import { createRunAgentActivity } from "zeitlich";
+import { createLangChainModelInvoker } from "zeitlich/adapters/langchain";
 import type { WorkflowClient } from "@temporalio/client";
 
 /**
@@ -43,19 +43,22 @@ export const createNietzscheSubagentActivities = ({
   client: WorkflowClient;
 }) => {
   return {
-    runNietzscheAgentActivity: (config: InvokeModelConfig) => {
-      const model = new ChatAnthropic({
-        model: "claude-sonnet-4-6",
-        maxRetries: 2,
-        thinking: {
-          budget_tokens: 2000,
-          type: "enabled",
-        },
-        maxTokens: 3000,
-        betas: ["interleaved-thinking-2025-05-14"],
-      });
-      return invokeModel({ config, model, redis, client });
-    },
+    runNietzscheAgentActivity: createRunAgentActivity(
+      client,
+      createLangChainModelInvoker({
+        redis,
+        model: new ChatAnthropic({
+          model: "claude-sonnet-4-6",
+          maxRetries: 2,
+          thinking: {
+            budget_tokens: 2000,
+            type: "enabled",
+          },
+          maxTokens: 3000,
+          betas: ["interleaved-thinking-2025-05-14"],
+        }),
+      })
+    ),
     extractTextContentActivity: async (storedMessage: StoredMessage) =>
       extractTextContent(storedMessage),
   };
