@@ -1,4 +1,4 @@
-import { proxyActivities, workflowInfo } from "@temporalio/workflow";
+import { proxyActivities } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
@@ -22,27 +22,24 @@ const { runNietzscheAgentActivity, extractTextContentActivity } =
 export const nietzscheSubagentWorkflow: SubagentWorkflow = async ({
   prompt,
 }) => {
-  const { runId: temporalRunId } = workflowInfo();
-
   const stateManager = createAgentStateManager({
     initialState: {
       systemPrompt: agentConfig.systemPrompt,
     },
-    agentName: agentConfig.agentName,
   });
 
   const session = await createSession({
     ...agentConfig,
-    threadId: temporalRunId,
     runAgent: runNietzscheAgentActivity,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
     },
   });
 
-  const { finalMessage } = await session.runSession({ stateManager });
+  const { finalMessage, threadId } = await session.runSession({ stateManager });
 
   return {
+    threadId,
     toolResponse: finalMessage
       ? await extractTextContentActivity(finalMessage)
       : "No response from Nietzsche",

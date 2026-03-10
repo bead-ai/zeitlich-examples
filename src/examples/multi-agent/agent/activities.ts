@@ -2,13 +2,16 @@ import type Redis from "ioredis";
 import { ChatAnthropic } from "@langchain/anthropic";
 import {
   createAskUserQuestionHandler,
-  createBashHandler,
+  bashHandler,
+  SandboxManager,
+  withSandbox,
   createRunAgentActivity,
 } from "zeitlich";
 import { toTree } from "zeitlich";
 import { inMemoryFileSystem } from "./data";
 import type { WorkflowClient } from "@temporalio/client";
-import { createLangChainAdapter } from "zeitlich/adapters/langchain";
+import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
+import { InMemorySandboxProvider } from "zeitlich/adapters/sandbox/inmemory";
 /**
  * Creates activities for the main agent workflow
  * Tools and model are bound at activity creation time, not passed per-call
@@ -23,9 +26,11 @@ export const createMainAgentActivities = ({
   const { threadOps, createModelInvoker } = createLangChainAdapter({
     redis,
   });
+  const sandboxManager = new SandboxManager(new InMemorySandboxProvider());
 
   return {
     ...threadOps,
+    ...sandboxManager.createActivities(),
     generateFileTreeActivity: async () =>
       Promise.resolve(toTree(inMemoryFileSystem)),
     runAgentActivity: createRunAgentActivity(
@@ -43,7 +48,7 @@ export const createMainAgentActivities = ({
         })
       )
     ),
-    bashHandlerActivity: createBashHandler({ fs: inMemoryFileSystem }),
+    bashHandlerActivity: withSandbox(sandboxManager, bashHandler),
     askUserQuestionHandlerActivity: createAskUserQuestionHandler(),
   };
 };

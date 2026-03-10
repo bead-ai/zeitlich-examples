@@ -1,4 +1,4 @@
-import { proxyActivities, workflowInfo } from "@temporalio/workflow";
+import { proxyActivities } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
@@ -21,30 +21,27 @@ const { runAynRandAgent, extractTextContent } = proxyActivities<
 });
 
 export const aynRandSubagentWorkflow: SubagentWorkflow = async ({ prompt }) => {
-  const { runId: temporalRunId } = workflowInfo();
-
   const stateManager = createAgentStateManager({
     initialState: {
       systemPrompt: agentConfig.systemPrompt,
     },
-    agentName: agentConfig.agentName,
   });
 
   const session = await createSession({
     ...agentConfig,
-    threadId: temporalRunId,
     runAgent: runAynRandAgent,
     buildContextMessage: () => {
       return [{ type: "text" as const, text: prompt }];
     },
   });
 
-  const { finalMessage } = await session.runSession({ stateManager });
+  const { finalMessage, threadId } = await session.runSession({ stateManager });
   return {
     toolResponse: finalMessage
       ? await extractTextContent(finalMessage)
       : "No response from Ayn Rand",
     data: null,
+    threadId: threadId,
   };
 };
 

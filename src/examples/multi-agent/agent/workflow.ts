@@ -1,10 +1,11 @@
-import { proxyActivities, workflowInfo } from "@temporalio/workflow";
+import { proxyActivities } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
   askUserQuestionTool,
   defineTool,
   bashTool,
+  proxySandboxOps,
 } from "zeitlich/workflow";
 import { aynRandSubagent } from "./subagents/ayn-rand/workflow";
 import { nietzscheSubagent } from "./subagents/nietzsche/workflow";
@@ -28,18 +29,15 @@ const {
 });
 
 export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
-  const { runId: temporalRunId } = workflowInfo();
   const stateManager = createAgentStateManager({
     initialState: {
       systemPrompt: agentConfig.systemPrompt,
     },
-    agentName: agentConfig.agentName,
   });
   const fileTree = await generateFileTreeActivity();
 
   const session = await createSession({
     ...agentConfig,
-    threadId: temporalRunId,
     runAgent: runAgentActivity,
     buildContextMessage: () => {
       return [
@@ -47,6 +45,7 @@ export async function multiAgentWorkflow({ prompt }: { prompt: string }) {
         { type: "text", text: prompt },
       ];
     },
+    sandbox: proxySandboxOps(),
     subagents: [nietzscheSubagent, aynRandSubagent],
     tools: {
       AskUserQuestion: defineTool({

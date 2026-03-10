@@ -6,7 +6,7 @@ import {
   type StoredMessage,
 } from "@langchain/core/messages";
 import { createRunAgentActivity } from "zeitlich";
-import { createLangChainModelInvoker } from "zeitlich/adapters/langchain";
+import { createLangChainModelInvoker } from "zeitlich/adapters/thread/langchain";
 import type { WorkflowClient } from "@temporalio/client";
 
 /**
