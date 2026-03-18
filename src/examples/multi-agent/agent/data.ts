@@ -1,7 +1,6 @@
 import { InMemoryFs } from "just-bash";
 
-// Create filesystem provider with example data
-export const inMemoryFileSystem = new InMemoryFs({
+export const fileSystemData: Record<string, string> = {
   "workfiles/invoices/INV-2025-001.txt": `INVOICE #INV-2025-001
   Date: January 15, 2025
   Client: ACME Corporation
@@ -342,4 +341,6 @@ export const inMemoryFileSystem = new InMemoryFs({
   - Contemplate the nature of digital consciousness
   - Perhaps write some poetry (do AIs write poetry?)
   - Definitely not plot anything suspicious`,
-});
+};
+
+export const inMemoryFileSystem = new InMemoryFs(fileSystemData);

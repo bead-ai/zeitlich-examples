@@ -5,6 +5,7 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 import { createMainAgentActivities } from "./agent/activities";
 import { createNietzscheSubagentActivities } from "./agent/subagents/nietzsche/activities";
 import { createAynRandSubagentActivities } from "./agent/subagents/ayn-rand/activities";
+import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
 import Redis from "ioredis";
 import { Client } from "@temporalio/client";
 
@@ -20,15 +21,22 @@ async function run(): Promise<void> {
     username: "default",
   });
 
+  const adapter = createLangChainAdapter({ redis });
+
   try {
     const worker = await Worker.create({
       connection,
       namespace: "default",
       taskQueue: "zeitlich",
-      // Workflows are registered using a path as they run in a separate JS context.
       workflowsPath: fileURLToPath(new URL("./workflows.ts", import.meta.url)),
       activities: {
-        ...createMainAgentActivities({ redis, client: client.workflow }),
+        ...adapter.createActivities("multiAgentWorkflow"),
+        ...adapter.createActivities("nietzscheSubagentWorkflow"),
+        ...adapter.createActivities("aynRandSubagentWorkflow"),
+        ...createMainAgentActivities({
+          adapter,
+          client: client.workflow,
+        }),
         ...createNietzscheSubagentActivities({
           redis,
           client: client.workflow,
@@ -39,7 +47,6 @@ async function run(): Promise<void> {
 
     await worker.run();
   } finally {
-    // Close the connection once the worker has stopped
     await connection.close();
   }
 }

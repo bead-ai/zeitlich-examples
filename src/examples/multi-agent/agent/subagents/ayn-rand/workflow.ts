@@ -2,8 +2,10 @@ import { proxyActivities } from "@temporalio/workflow";
 import {
   createAgentStateManager,
   createSession,
-  type SubagentWorkflow,
+  defineSubagentWorkflow,
+  defineSubagent,
 } from "zeitlich/workflow";
+import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
 import type { createAynRandSubagentActivities } from "./activities";
 import { agentConfig } from "./config";
 
@@ -20,33 +22,36 @@ const { runAynRandAgent, extractTextContent } = proxyActivities<
   heartbeatTimeout: "5m",
 });
 
-export const aynRandSubagentWorkflow: SubagentWorkflow = async ({ prompt }) => {
-  const stateManager = createAgentStateManager({
-    initialState: {
-      systemPrompt: agentConfig.systemPrompt,
-    },
-  });
+export const aynRandSubagentWorkflow = defineSubagentWorkflow(
+  {
+    name: agentConfig.agentName,
+    description: agentConfig.description,
+  },
+  async (prompt, sessionInput) => {
+    const stateManager = createAgentStateManager({
+      initialState: {
+        systemPrompt: agentConfig.systemPrompt,
+      },
+    });
 
-  const session = await createSession({
-    ...agentConfig,
-    runAgent: runAynRandAgent,
-    buildContextMessage: () => {
-      return [{ type: "text" as const, text: prompt }];
-    },
-  });
+    const session = await createSession({
+      ...agentConfig,
+      ...sessionInput,
+      threadOps: proxyLangChainThreadOps(),
+      runAgent: runAynRandAgent,
+      buildContextMessage: () => [{ type: "text" as const, text: prompt }],
+    });
 
-  const { finalMessage, threadId } = await session.runSession({ stateManager });
-  return {
-    toolResponse: finalMessage
-      ? await extractTextContent(finalMessage)
-      : "No response from Ayn Rand",
-    data: null,
-    threadId: threadId,
-  };
-};
+    const { finalMessage, threadId } = await session.runSession({ stateManager });
 
-export const aynRandSubagent = {
-  agentName: agentConfig.agentName,
-  description: agentConfig.description,
-  workflow: aynRandSubagentWorkflow,
-};
+    return {
+      toolResponse: finalMessage
+        ? await extractTextContent(finalMessage)
+        : "No response from Ayn Rand",
+      data: null,
+      threadId,
+    };
+  },
+);
+
+export const aynRandSubagent = defineSubagent(aynRandSubagentWorkflow);
