@@ -8,6 +8,7 @@ import {
 import { createRunAgentActivity } from "zeitlich";
 import { createLangChainModelInvoker } from "zeitlich/adapters/thread/langchain";
 import type { WorkflowClient } from "@temporalio/client";
+import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
 
 /**
  * Extracts text content from a StoredMessage
@@ -42,7 +43,9 @@ export const createNietzscheSubagentActivities = ({
   redis: Redis;
   client: WorkflowClient;
 }) => {
+  const adapter = createLangChainAdapter({ redis });
   return {
+    ...adapter.createActivities("AskNietzscheAgent"),
     runNietzscheAgentActivity: createRunAgentActivity(
       client,
       createLangChainModelInvoker({

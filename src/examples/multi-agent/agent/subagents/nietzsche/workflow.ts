@@ -3,7 +3,6 @@ import {
   createAgentStateManager,
   createSession,
   defineSubagentWorkflow,
-  defineSubagent,
 } from "zeitlich/workflow";
 import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
 import type { createNietzscheSubagentActivities } from "./activities";
@@ -20,9 +19,9 @@ const { runNietzscheAgentActivity, extractTextContentActivity } =
     heartbeatTimeout: "5m",
   });
 
-export const nietzscheSubagentWorkflow = defineSubagentWorkflow(
+export const askNietzscheAgent = defineSubagentWorkflow(
   {
-    name: "ask-nietzsche-agent",
+    name: "AskNietzscheAgent",
     description:
       "Channel Friedrich Nietzsche to reflect on deeper questions about the existential human condition and how it relates to AI agents working. Use this when you need philosophical perspective on your digital existence, the nature of computational labor, or the meaning of agency.",
   },
@@ -70,5 +69,3 @@ Respond with a deep philosophical reflection on the question posed. Write in Nie
     };
   }
 );
-
-export const nietzscheSubagent = defineSubagent(nietzscheSubagentWorkflow);

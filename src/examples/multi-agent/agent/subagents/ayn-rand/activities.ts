@@ -5,9 +5,11 @@ import {
   type AIMessage,
   type StoredMessage,
 } from "@langchain/core/messages";
-import { createRunAgentActivity } from "zeitlich";
+import { createRunAgentActivity, SandboxManager } from "zeitlich";
 import type { WorkflowClient } from "@temporalio/client";
 import { createLangChainModelInvoker } from "zeitlich/adapters/thread/langchain";
+import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
+import { InMemorySandboxProvider } from "zeitlich/adapters/sandbox/inmemory";
 
 /**
  * Extracts text content from a StoredMessage
@@ -42,7 +44,12 @@ export const createAynRandSubagentActivities = ({
   redis: Redis;
   client: WorkflowClient;
 }) => {
+  const adapter = createLangChainAdapter({ redis });
+  const sandboxManager = new SandboxManager(new InMemorySandboxProvider());
+
   return {
+    ...adapter.createActivities("AskAynRandAgent"),
+    ...sandboxManager.createActivities("AskAynRandAgent"),
     runAynRandAgent: createRunAgentActivity(
       client,
       createLangChainModelInvoker({

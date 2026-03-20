@@ -6,11 +6,12 @@ import {
   askUserQuestionTool,
   defineTool,
   bashTool,
+  defineSubagent,
 } from "zeitlich/workflow";
 import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
 import { proxyInMemorySandboxOps } from "zeitlich/adapters/sandbox/inmemory/workflow";
-import { aynRandSubagent } from "./subagents/ayn-rand/workflow";
-import { nietzscheSubagent } from "./subagents/nietzsche/workflow";
+import { askAynRandAgent } from "./subagents/ayn-rand/workflow";
+import { askNietzscheAgent } from "./subagents/nietzsche/workflow";
 import type { createMainAgentActivities } from "./activities";
 
 const {
@@ -29,8 +30,8 @@ const {
   heartbeatTimeout: "5m",
 });
 
-export const multiAgentWorkflow = defineWorkflow(
-  { name: "multiAgentWorkflow" },
+export const multiAgent = defineWorkflow(
+  { name: "MultiAgent" },
   async ({ prompt }: { prompt: string }, sessionInput) => {
     const stateManager = createAgentStateManager({
       initialState: {
@@ -47,6 +48,7 @@ David will start a conversation with you. Start working on the task he gives you
       maxTurns: 10,
       appendSystemPrompt: true,
       threadOps: proxyLangChainThreadOps(),
+      sandboxOps: proxyInMemorySandboxOps(),
       runAgent: runAgentActivity,
       buildContextMessage: () => {
         return [
@@ -54,8 +56,13 @@ David will start a conversation with you. Start working on the task he gives you
           { type: "text", text: prompt },
         ];
       },
-      sandbox: proxyInMemorySandboxOps(),
-      subagents: [nietzscheSubagent, aynRandSubagent],
+      subagents: [
+        defineSubagent(askNietzscheAgent),
+        defineSubagent(askAynRandAgent, {
+          sandbox: "own",
+          thread: "fork",
+        }),
+      ],
       tools: {
         AskUserQuestion: defineTool({
           ...askUserQuestionTool,

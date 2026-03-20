@@ -5,7 +5,6 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 import { createMainAgentActivities } from "./agent/activities";
 import { createNietzscheSubagentActivities } from "./agent/subagents/nietzsche/activities";
 import { createAynRandSubagentActivities } from "./agent/subagents/ayn-rand/activities";
-import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
 import Redis from "ioredis";
 import { Client } from "@temporalio/client";
 
@@ -21,8 +20,6 @@ async function run(): Promise<void> {
     username: "default",
   });
 
-  const adapter = createLangChainAdapter({ redis });
-
   try {
     const worker = await Worker.create({
       connection,
@@ -30,11 +27,8 @@ async function run(): Promise<void> {
       taskQueue: "zeitlich",
       workflowsPath: fileURLToPath(new URL("./workflows.ts", import.meta.url)),
       activities: {
-        ...adapter.createActivities("multiAgentWorkflow"),
-        ...adapter.createActivities("nietzscheSubagentWorkflow"),
-        ...adapter.createActivities("aynRandSubagentWorkflow"),
         ...createMainAgentActivities({
-          adapter,
+          redis,
           client: client.workflow,
         }),
         ...createNietzscheSubagentActivities({

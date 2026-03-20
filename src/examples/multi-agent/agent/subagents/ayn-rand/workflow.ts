@@ -3,10 +3,10 @@ import {
   createAgentStateManager,
   createSession,
   defineSubagentWorkflow,
-  defineSubagent,
 } from "zeitlich/workflow";
 import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
 import type { createAynRandSubagentActivities } from "./activities";
+import { proxyInMemorySandboxOps } from "zeitlich/adapters/sandbox/inmemory/workflow";
 
 const { runAynRandAgent, extractTextContent } = proxyActivities<
   ReturnType<typeof createAynRandSubagentActivities>
@@ -21,11 +21,12 @@ const { runAynRandAgent, extractTextContent } = proxyActivities<
   heartbeatTimeout: "5m",
 });
 
-export const aynRandSubagentWorkflow = defineSubagentWorkflow(
+export const askAynRandAgent = defineSubagentWorkflow(
   {
-    name: "ask-ayn-rand-agent",
+    name: "AskAynRandAgent",
     description:
       "Channel Ayn Rand to answer questions about the nature of being an AI agent.",
+    sandboxShutdown: "pause-until-parent-close",
   },
   async (prompt, sessionInput) => {
     const stateManager = createAgentStateManager({
@@ -50,16 +51,19 @@ export const aynRandSubagentWorkflow = defineSubagentWorkflow(
       },
     });
 
+    const sandboxOps = proxyInMemorySandboxOps();
+
     const session = await createSession({
       ...sessionInput,
       maxTurns: 5,
       appendSystemPrompt: true,
       threadOps: proxyLangChainThreadOps(),
+      sandboxOps,
       runAgent: runAynRandAgent,
       buildContextMessage: () => [{ type: "text" as const, text: prompt }],
     });
 
-    const { finalMessage, threadId } = await session.runSession({
+    const { finalMessage, threadId, sandboxId } = await session.runSession({
       stateManager,
     });
 
@@ -69,8 +73,8 @@ export const aynRandSubagentWorkflow = defineSubagentWorkflow(
         : "No response from Ayn Rand",
       data: null,
       threadId,
+      sandboxId,
+      destroySandbox: () => sandboxOps.destroySandbox(sandboxId),
     };
   }
 );
-
-export const aynRandSubagent = defineSubagent(aynRandSubagentWorkflow);

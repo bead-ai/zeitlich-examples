@@ -2,14 +2,14 @@ import "dotenv/config";
 
 import { Connection, Client } from "@temporalio/client";
 import { loadClientConnectConfig } from "@temporalio/envconfig";
-import { multiAgentWorkflow } from "./agent/workflow";
+import { multiAgent } from "./agent/workflow";
 
 async function run(): Promise<void> {
   const config = loadClientConnectConfig();
   const connection = await Connection.connect(config.connectionOptions);
   const client = new Client({ connection });
 
-  const handle = await client.workflow.start(multiAgentWorkflow, {
+  const handle = await client.workflow.start(multiAgent, {
     taskQueue: "zeitlich",
     args: [
       {

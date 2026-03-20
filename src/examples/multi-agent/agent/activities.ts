@@ -8,20 +8,23 @@ import {
 } from "zeitlich";
 import { fileSystemData } from "./data";
 import type { WorkflowClient } from "@temporalio/client";
-import type { LangChainAdapter } from "zeitlich/adapters/thread/langchain";
+import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
 import { InMemorySandboxProvider } from "zeitlich/adapters/sandbox/inmemory";
+import type Redis from "ioredis";
 
 export const createMainAgentActivities = ({
-  adapter,
   client,
+  redis,
 }: {
-  adapter: LangChainAdapter;
   client: WorkflowClient;
+  redis: Redis;
 }) => {
+  const adapter = createLangChainAdapter({ redis });
   const sandboxManager = new SandboxManager(new InMemorySandboxProvider());
 
   return {
-    ...sandboxManager.createActivities("multiAgentWorkflow"),
+    ...adapter.createActivities("MultiAgent"),
+    ...sandboxManager.createActivities("MultiAgent"),
     generateFileTreeActivity: async () =>
       Object.keys(fileSystemData)
         .sort()
@@ -39,8 +42,8 @@ export const createMainAgentActivities = ({
           },
           maxTokens: 4000,
           betas: ["interleaved-thinking-2025-05-14"],
-        }),
-      ),
+        })
+      )
     ),
     bashHandlerActivity: withSandbox(sandboxManager, bashHandler),
     askUserQuestionHandlerActivity: createAskUserQuestionHandler(),
