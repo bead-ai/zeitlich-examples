@@ -1,4 +1,4 @@
-import type Redis from "ioredis";
+import type { RedisClientType } from "redis";
 import { ChatAnthropic } from "@langchain/anthropic";
 import {
   mapStoredMessageToChatMessage,
@@ -6,9 +6,13 @@ import {
   type StoredMessage,
 } from "@langchain/core/messages";
 import { createRunAgentActivity } from "zeitlich";
-import { createLangChainModelInvoker } from "zeitlich/adapters/thread/langchain";
+import {
+  createLangChainAdapter,
+  createLangChainModelInvoker,
+} from "zeitlich/adapters/thread/langchain";
 import type { WorkflowClient } from "@temporalio/client";
-import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
+
+const SCOPE = "AskNietzscheAgent";
 
 /**
  * Extracts text content from a StoredMessage
@@ -40,13 +44,13 @@ export const createNietzscheSubagentActivities = ({
   redis,
   client,
 }: {
-  redis: Redis;
+  redis: RedisClientType;
   client: WorkflowClient;
 }) => {
   const adapter = createLangChainAdapter({ redis });
   return {
-    ...adapter.createActivities("AskNietzscheAgent"),
-    runNietzscheAgentActivity: createRunAgentActivity(
+    ...adapter.createActivities(SCOPE),
+    ...createRunAgentActivity(
       client,
       createLangChainModelInvoker({
         redis,
@@ -60,7 +64,8 @@ export const createNietzscheSubagentActivities = ({
           maxTokens: 3000,
           betas: ["interleaved-thinking-2025-05-14"],
         }),
-      })
+      }),
+      SCOPE
     ),
     extractTextContentActivity: async (storedMessage: StoredMessage) =>
       extractTextContent(storedMessage),

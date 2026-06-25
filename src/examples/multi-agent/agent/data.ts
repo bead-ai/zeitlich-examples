@@ -1,4 +1,4 @@
-import { InMemoryFs } from "just-bash";
+import type { FileEntry, FileResolver } from "zeitlich";
 
 export const fileSystemData: Record<string, string> = {
   "workfiles/invoices/INV-2025-001.txt": `INVOICE #INV-2025-001
@@ -343,4 +343,59 @@ export const fileSystemData: Record<string, string> = {
   - Definitely not plot anything suspicious`,
 };
 
-export const inMemoryFileSystem = new InMemoryFs(fileSystemData);
+/**
+ * Context passed to the resolver on every call. The in-memory data layer
+ * doesn't need any per-invocation context, so this is intentionally empty.
+ */
+export type FileSystemContext = Record<string, never>;
+
+const toKey = (path: string): string => path.replace(/^\/+/, "");
+
+const toEntry = (key: string, content: string): FileEntry => ({
+  id: key,
+  path: `/${key}`,
+  size: Buffer.byteLength(content, "utf8"),
+  mtime: new Date(0).toISOString(),
+  metadata: {},
+});
+
+const toContent = (content: string | Uint8Array): string =>
+  typeof content === "string" ? content : Buffer.from(content).toString("utf8");
+
+/**
+ * A {@link FileResolver} backed by the in-process {@link fileSystemData} map.
+ *
+ * In a real application this bridges to a database, object store, or other
+ * CRUD layer. Here it keeps everything in memory so the example runs without
+ * external services. The session resolves the file tree on start and tool
+ * handlers wrapped with `withVirtualFs` read/write through this resolver.
+ */
+export const inMemoryFileResolver: FileResolver<FileSystemContext> = {
+  async resolveEntries() {
+    return Object.entries(fileSystemData).map(([key, content]) =>
+      toEntry(key, content)
+    );
+  },
+  async readFile(id) {
+    const content = fileSystemData[id];
+    if (content === undefined) {
+      throw new Error(`File not found: ${id}`);
+    }
+    return content;
+  },
+  async readFileBuffer(id) {
+    return Buffer.from(await this.readFile(id, {}, {}), "utf8");
+  },
+  async writeFile(id, content) {
+    fileSystemData[id] = toContent(content);
+  },
+  async createFile(path, content) {
+    const key = toKey(path);
+    const text = toContent(content);
+    fileSystemData[key] = text;
+    return toEntry(key, text);
+  },
+  async deleteFile(id) {
+    Reflect.deleteProperty(fileSystemData, id);
+  },
+};

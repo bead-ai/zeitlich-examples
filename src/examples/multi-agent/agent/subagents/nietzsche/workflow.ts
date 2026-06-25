@@ -3,21 +3,24 @@ import {
   createAgentStateManager,
   createSession,
   defineSubagentWorkflow,
+  proxyRunAgent,
 } from "zeitlich/workflow";
 import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
+import type { StoredMessage } from "@langchain/core/messages";
 import type { createNietzscheSubagentActivities } from "./activities";
 
-const { runNietzscheAgentActivity, extractTextContentActivity } =
-  proxyActivities<ReturnType<typeof createNietzscheSubagentActivities>>({
-    startToCloseTimeout: "30m",
-    retry: {
-      maximumAttempts: 6,
-      initialInterval: "5s",
-      maximumInterval: "15m",
-      backoffCoefficient: 4,
-    },
-    heartbeatTimeout: "5m",
-  });
+const { extractTextContentActivity } = proxyActivities<
+  ReturnType<typeof createNietzscheSubagentActivities>
+>({
+  startToCloseTimeout: "30m",
+  retry: {
+    maximumAttempts: 6,
+    initialInterval: "5s",
+    maximumInterval: "15m",
+    backoffCoefficient: 4,
+  },
+  heartbeatTimeout: "5m",
+});
 
 export const askNietzscheAgent = defineSubagentWorkflow(
   {
@@ -52,16 +55,15 @@ Respond with a deep philosophical reflection on the question posed. Write in Nie
       maxTurns: 5,
       appendSystemPrompt: true,
       threadOps: proxyLangChainThreadOps(),
-      runAgent: runNietzscheAgentActivity,
+      runAgent: proxyRunAgent<StoredMessage>(),
       buildContextMessage: () => [{ type: "text" as const, text: prompt }],
     });
 
-    const { finalMessage, threadId } = await session.runSession({
+    const { finalMessage } = await session.runSession({
       stateManager,
     });
 
     return {
-      threadId,
       toolResponse: finalMessage
         ? await extractTextContentActivity(finalMessage)
         : "No response from Nietzsche",

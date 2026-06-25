@@ -5,20 +5,22 @@ import { NativeConnection, Worker } from "@temporalio/worker";
 import { createMainAgentActivities } from "./agent/activities";
 import { createNietzscheSubagentActivities } from "./agent/subagents/nietzsche/activities";
 import { createAynRandSubagentActivities } from "./agent/subagents/ayn-rand/activities";
-import Redis from "ioredis";
+import { createClient, type RedisClientType } from "redis";
 import { Client } from "@temporalio/client";
 
 async function run(): Promise<void> {
   const connection = await NativeConnection.connect({
-    address: "localhost:7233",
+    address: process.env.TEMPORAL_ADDRESS ?? "localhost:7233",
   });
   const client = new Client({ connection });
 
-  const redis = new Redis({
-    host: "localhost",
-    port: 6379,
-    username: "default",
+  const redis: RedisClientType = createClient({
+    socket: {
+      host: process.env.REDIS_HOST ?? "localhost",
+      port: Number(process.env.REDIS_PORT ?? 6379),
+    },
   });
+  await redis.connect();
 
   try {
     const worker = await Worker.create({
@@ -41,6 +43,7 @@ async function run(): Promise<void> {
 
     await worker.run();
   } finally {
+    await redis.quit();
     await connection.close();
   }
 }
