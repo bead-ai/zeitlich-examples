@@ -60,7 +60,7 @@ export const askAynRandAgent = defineSubagentWorkflow(
       buildContextMessage: () => [{ type: "text" as const, text: prompt }],
     });
 
-    const { finalMessage, threadId } = await session.runSession({
+    const { finalMessage } = await session.runSession({
       stateManager,
     });
 
@@ -69,7 +69,6 @@ export const askAynRandAgent = defineSubagentWorkflow(
         ? await extractTextContent(finalMessage)
         : "No response from Ayn Rand",
       data: null,
-      threadId,
     };
   }
 );

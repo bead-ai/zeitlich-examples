@@ -59,12 +59,11 @@ Respond with a deep philosophical reflection on the question posed. Write in Nie
       buildContextMessage: () => [{ type: "text" as const, text: prompt }],
     });
 
-    const { finalMessage, threadId } = await session.runSession({
+    const { finalMessage } = await session.runSession({
       stateManager,
     });
 
     return {
-      threadId,
       toolResponse: finalMessage
         ? await extractTextContentActivity(finalMessage)
         : "No response from Nietzsche",
