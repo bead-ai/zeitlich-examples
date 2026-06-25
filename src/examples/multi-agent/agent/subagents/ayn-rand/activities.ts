@@ -1,15 +1,18 @@
-import type Redis from "ioredis";
+import type { RedisClientType } from "redis";
 import { ChatAnthropic } from "@langchain/anthropic";
 import {
   mapStoredMessageToChatMessage,
   type AIMessage,
   type StoredMessage,
 } from "@langchain/core/messages";
-import { createRunAgentActivity, SandboxManager } from "zeitlich";
+import { createRunAgentActivity } from "zeitlich";
+import {
+  createLangChainAdapter,
+  createLangChainModelInvoker,
+} from "zeitlich/adapters/thread/langchain";
 import type { WorkflowClient } from "@temporalio/client";
-import { createLangChainModelInvoker } from "zeitlich/adapters/thread/langchain";
-import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
-import { InMemorySandboxProvider } from "zeitlich/adapters/sandbox/inmemory";
+
+const SCOPE = "AskAynRandAgent";
 
 /**
  * Extracts text content from a StoredMessage
@@ -41,16 +44,14 @@ export const createAynRandSubagentActivities = ({
   redis,
   client,
 }: {
-  redis: Redis;
+  redis: RedisClientType;
   client: WorkflowClient;
 }) => {
   const adapter = createLangChainAdapter({ redis });
-  const sandboxManager = new SandboxManager(new InMemorySandboxProvider());
 
   return {
-    ...adapter.createActivities("AskAynRandAgent"),
-    ...sandboxManager.createActivities("AskAynRandAgent"),
-    runAynRandAgent: createRunAgentActivity(
+    ...adapter.createActivities(SCOPE),
+    ...createRunAgentActivity(
       client,
       createLangChainModelInvoker({
         redis,
@@ -62,7 +63,8 @@ export const createAynRandSubagentActivities = ({
             type: "enabled",
           },
         }),
-      })
+      }),
+      SCOPE
     ),
     extractTextContent: async (storedMessage: StoredMessage) =>
       extractTextContent(storedMessage),

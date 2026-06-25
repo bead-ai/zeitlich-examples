@@ -1,23 +1,29 @@
 import { proxyActivities } from "@temporalio/workflow";
 import {
+  applyVirtualTreeMutations,
+  askUserQuestionTool,
   createAgentStateManager,
   createSession,
-  defineWorkflow,
-  askUserQuestionTool,
-  defineTool,
-  bashTool,
   defineSubagent,
+  defineTool,
+  defineWorkflow,
+  globTool,
+  proxyRunAgent,
+  proxyVirtualFsOps,
+  readFileTool,
+  writeFileTool,
 } from "zeitlich/workflow";
 import { proxyLangChainThreadOps } from "zeitlich/adapters/thread/langchain/workflow";
-import { proxyInMemorySandboxOps } from "zeitlich/adapters/sandbox/inmemory/workflow";
+import type { StoredMessage } from "@langchain/core/messages";
 import { askAynRandAgent } from "./subagents/ayn-rand/workflow";
 import { askNietzscheAgent } from "./subagents/nietzsche/workflow";
 import type { createMainAgentActivities } from "./activities";
 
 const {
-  runAgentActivity,
   askUserQuestionHandlerActivity,
-  bashHandlerActivity,
+  readFileHandlerActivity,
+  globHandlerActivity,
+  writeFileHandlerActivity,
   generateFileTreeActivity,
 } = proxyActivities<ReturnType<typeof createMainAgentActivities>>({
   startToCloseTimeout: "30m",
@@ -48,8 +54,9 @@ David will start a conversation with you. Start working on the task he gives you
       maxTurns: 10,
       appendSystemPrompt: true,
       threadOps: proxyLangChainThreadOps(),
-      sandboxOps: proxyInMemorySandboxOps(),
-      runAgent: runAgentActivity,
+      runAgent: proxyRunAgent<StoredMessage>(),
+      virtualFsOps: proxyVirtualFsOps(),
+      virtualFs: { ctx: {} },
       buildContextMessage: () => {
         return [
           { type: "text", text: `Files in the filesystem: ${fileTree}` },
@@ -59,7 +66,6 @@ David will start a conversation with you. Start working on the task he gives you
       subagents: [
         defineSubagent(askNietzscheAgent),
         defineSubagent(askAynRandAgent, {
-          sandbox: "own",
           thread: "fork",
         }),
       ],
@@ -73,9 +79,31 @@ David will start a conversation with you. Start working on the task he gives you
             },
           },
         }),
-        Bash: defineTool({
-          ...bashTool,
-          handler: bashHandlerActivity,
+        Read: defineTool({
+          ...readFileTool,
+          handler: readFileHandlerActivity,
+        }),
+        Glob: defineTool({
+          ...globTool,
+          handler: globHandlerActivity,
+        }),
+        Write: defineTool({
+          ...writeFileTool,
+          handler: writeFileHandlerActivity,
+          hooks: {
+            onPostToolUse: ({ result }) => {
+              if (result?.treeMutations) {
+                applyVirtualTreeMutations(
+                  {
+                    get: () => stateManager.getCurrentState().fileTree,
+                    set: (_key, value) =>
+                      stateManager.mergeUpdate({ fileTree: value }),
+                  },
+                  result.treeMutations
+                );
+              }
+            },
+          },
         }),
       },
     });
