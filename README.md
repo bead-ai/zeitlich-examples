@@ -58,37 +58,36 @@ ANTHROPIC_API_KEY=sk-...
 
 ### Multi-Agent (`src/examples/multi-agent/`)
 
-A multi-agent debate system with a main orchestrator ("Herr Zeitlich") and two subagent philosophers (Nietzsche and Ayn Rand). Demonstrates tools, subagent delegation, state management, and in-memory filesystem access.
+A multi-agent debate system with a main orchestrator ("Herr Zeitlich") and two subagent philosophers (Nietzsche and Ayn Rand). Demonstrates tools, subagent delegation, state management, and a virtual filesystem backed by an in-memory data layer.
 
 ```
 src/examples/multi-agent/
 ├── workflows.ts                        # Re-exports all workflows
-├── worker.ts                           # Registers workflows/activities with ZeitlichPlugin
+├── worker.ts                           # Registers workflows/activities, node-redis client
 ├── start.ts                            # Client script to trigger the workflow
 └── agent/
     ├── workflow.ts                      # Main orchestrator workflow
-    ├── activities.ts                    # LLM invocation + tool handler factories
-    ├── config.ts                        # Agent name, system prompt, maxTurns
-    ├── data.ts                          # In-memory filesystem (invoices, clients, etc.)
+    ├── activities.ts                    # LLM invocation + virtual-fs tool handlers
+    ├── data.ts                          # In-memory FileResolver (invoices, clients, etc.)
     └── subagents/
         ├── nietzsche/
-        │   ├── workflow.ts              # Subagent workflow (returns string | null)
-        │   ├── activities.ts            # Subagent LLM invocation
-        │   └── config.ts               # Subagent personality & description
+        │   ├── workflow.ts              # Subagent workflow (returns text via Stored message)
+        │   └── activities.ts            # Subagent LLM invocation
         └── ayn-rand/
             ├── workflow.ts
-            ├── activities.ts
-            └── config.ts
+            └── activities.ts
 ```
 
 Key patterns demonstrated:
 
+- **`createLangChainAdapter({ redis })`** for Redis-backed thread persistence (node-redis client)
+- **`createRunAgentActivity(client, invoker, scope)`** + **`proxyRunAgent<StoredMessage>()`** to wire the agent loop
+- **`createVirtualFsActivities()`** / **`proxyVirtualFsOps()`** with a custom **`FileResolver`**
+- **`withVirtualFs()`** to back the built-in `Read` / `Glob` / `Write` tool handlers with an in-memory filesystem
+- **`applyVirtualTreeMutations()`** to persist file writes into workflow state
 - **`defineTool()`** with per-tool `hooks` for state updates
-- **`proxyDefaultThreadOps()`** for Redis-backed thread persistence
 - **`createSession()`** with `subagents`, `buildContextMessage`, and `systemPrompt`
-- **`invokeModel()`** with `{ config, model, redis, client }` signature
-- **`createBashHandler()`** / **`createAskUserQuestionHandler()`** factory pattern
-- **`toTree()`** with an in-memory filesystem object
+- **`defineSubagent()`** with `thread: "fork"` for forked subagent threads
 
 The app uses the published **zeitlich** package; workflow code imports from `zeitlich/workflow`, activities and worker from `zeitlich`.
 
