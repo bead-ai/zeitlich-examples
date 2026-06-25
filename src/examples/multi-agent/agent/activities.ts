@@ -9,14 +9,8 @@ import {
   writeFileHandler,
   type ActivityToolHandler,
   type FileEntryMetadata,
-  type FileReadArgs,
-  type FileWriteArgs,
-  type GlobArgs,
-  type JsonValue,
-  type RouterContext,
   type Sandbox,
   type SandboxContext,
-  type TreeMutation,
 } from "zeitlich";
 import {
   fileSystemData,
@@ -28,23 +22,6 @@ import { createLangChainAdapter } from "zeitlich/adapters/thread/langchain";
 import type { RedisClientType } from "redis";
 
 const SCOPE = "MultiAgent";
-
-/** Tree mutations surfaced by `withVirtualFs` so writes persist into state. */
-export interface FileMutationResult {
-  treeMutations: TreeMutation[];
-}
-
-/**
- * Public type for the virtual-fs tool activities. The built-in handler result
- * types aren't exported by zeitlich, so we project them onto nameable types to
- * keep the inferred activity signatures portable across the workflow boundary.
- */
-type FileToolActivity<TArgs, TData> = ActivityToolHandler<
-  TArgs,
-  TData,
-  RouterContext,
-  JsonValue | string
->;
 
 export const createMainAgentActivities = ({
   client,
@@ -103,15 +80,9 @@ export const createMainAgentActivities = ({
         .sort()
         .map((p) => `  ${p}`)
         .join("\n"),
-    readFileHandlerActivity: virtualFsHandler(
-      readFileHandler
-    ) as unknown as FileToolActivity<FileReadArgs, JsonValue>,
-    globHandlerActivity: virtualFsHandler(
-      globHandler
-    ) as unknown as FileToolActivity<GlobArgs, JsonValue>,
-    writeFileHandlerActivity: virtualFsHandler(
-      writeFileHandler
-    ) as unknown as FileToolActivity<FileWriteArgs, FileMutationResult | null>,
+    readFileHandlerActivity: virtualFsHandler(readFileHandler),
+    globHandlerActivity: virtualFsHandler(globHandler),
+    writeFileHandlerActivity: virtualFsHandler(writeFileHandler),
     askUserQuestionHandlerActivity: createAskUserQuestionHandler(),
   };
 };
